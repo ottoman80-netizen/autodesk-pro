@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoDesk Pro — Finance Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    :root {
+      --primary:       #202124;
+      --primary-light: #3c4043;
+      --accent:        #1a73e8;
+      --accent-hover:  #1557b0;
+      --indigo:        #4285f4;
+      --violet:        #1a73e8;
+      --emerald:       #1e8e3e;
+      --success:       #1e8e3e;
+      --warning:       #e37400;
+      --danger:        #c5221f;
+      --bg:            #f8f9fa;
+      --card:          #ffffff;
+      --text:          #202124;
+      --text-muted:    #5f6368;
+      --border:        #dadce0;
+      --input-bg:      #f8f9fa;
+      --shadow:        0 1px 2px rgba(60,64,67,0.10), 0 1px 3px rgba(60,64,67,0.08);
+      --shadow-md:     0 2px 6px rgba(60,64,67,0.14), 0 1px 3px rgba(60,64,67,0.10);
+      --shadow-lg:     0 8px 24px rgba(60,64,67,0.18), 0 3px 8px rgba(60,64,67,0.10);
+      --radius:        10px;
+      --radius-sm:     6px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; min-height: 100vh; }
+
+    /* ── Auth screens ── */
+    .auth-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 24px; }
+    .auth-card { background: white; border-radius: 16px; box-shadow: var(--shadow-lg); padding: 40px; width: 420px; max-width: 100%; }
+    .auth-logo { font-size: 26px; font-weight: 700; text-align: center; margin-bottom: 4px; color: var(--text); }
+    .auth-logo span { color: var(--accent); }
+    .auth-subtitle { text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 28px; }
+    .auth-tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 24px; }
+    .auth-tab { flex: 1; padding: 10px; border: none; background: none; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+    .auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .auth-field { margin-bottom: 16px; }
+    .auth-field label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px; }
+    .auth-field input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--input-bg); color: var(--text); transition: border-color 0.2s, box-shadow 0.2s; }
+    .auth-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); background: white; }
+    .auth-btn { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s, box-shadow 0.2s; margin-top: 8px; }
+    .auth-btn:hover { background: var(--accent-hover); box-shadow: 0 4px 12px rgba(26,115,232,0.3); }
+    .auth-btn:disabled { background: #9aa0a6; cursor: not-allowed; }
+    .auth-note { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 14px; line-height: 1.6; }
+
+    /* ── Header ── */
+    .header { background: #ffffff; color: var(--text); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 0 var(--border), 0 2px 6px rgba(60,64,67,0.08); position: sticky; top: 0; z-index: 100; overflow: visible; gap: 12px; }
+    .header::after { content: ''; position: absolute; bottom: 0; left: -60%; right: 0; height: 2px; width: 220%; background: linear-gradient(90deg, transparent 0%, #1a73e8 50%, transparent 100%); animation: shimmer 4s ease-in-out infinite; }
+    @keyframes shimmer { 0% { transform: translateX(-40%); } 100% { transform: translateX(40%); } }
+    .header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); white-space: nowrap; flex-shrink: 0; }
+    .header h1 span { color: var(--accent); }
+
+    /* ── Header search ── */
+    .header-search { position: relative; display: flex; align-items: center; flex: 1; max-width: 420px; }
+    .header-search-icon { position: absolute; left: 12px; font-size: 13px; pointer-events: none; color: var(--text-muted); }
+    .header-search-input { width: 100%; padding: 8px 14px 8px 34px; border: 1px solid var(--border); border-radius: 24px; font-size: 13px; background: var(--input-bg); color: var(--text); transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; }
+    .header-search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); background: white; }
+    .header-search-input::placeholder { color: #9aa0a6; }
+
+    /* ── User menu ── */
+    .header-right-group { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .header-date-small { font-size: 11px; color: #9aa0a6; white-space: nowrap; }
+    .admin-pill { padding: 5px 14px; background: #e8f0fe; color: var(--accent); border: none; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
+    .admin-pill:hover { background: #d2e3fc; }
+    .user-menu-wrap { position: relative; }
+    .user-menu-btn { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 8px; border-radius: 24px; transition: background 0.2s; border: none; background: none; }
+    .user-menu-btn:hover { background: #f1f3f4; }
+    .user-avatar-circle { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+    .user-menu-name { font-size: 13px; font-weight: 500; color: var(--text); }
+    .user-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: white; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 6px; min-width: 200px; z-index: 300; }
+    .user-dropdown-email { padding: 8px 12px; font-size: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border); margin-bottom: 4px; word-break: break-all; }
+    .user-dropdown-item { width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; font-size: 13px; border-radius: 6px; transition: background 0.15s; color: var(--text); }
+    .user-dropdown-item:hover { background: #f1f3f4; }
+    .user-dropdown-item.danger { color: var(--danger); }
+    .user-dropdown-item.danger:hover { background: #fce8e6; }
+
+    /* ── Layout ── */
+    .app { max-width: 1400px; margin: 0 auto; padding: 20px 24px; display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+    .left-col { min-width: 0; }
+    .right-col { min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+    body { overflow-x: auto; }
+
+    /* ── Row enabled/disabled toggle ── */
+    .row-disabled td { opacity: 0.25; background: #f8f9fa !important; }
+    .row-disabled .payment { color: #94a3b8 !important; font-size: 20px !important; }
+    .row-check { width: 34px; text-align: center; padding: 0 !important; }
+    .row-check input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent); }
+
+    /* ── Cards ── */
+    .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden; transition: box-shadow 0.25s, transform 0.25s; animation: cardFadeIn 0.45s ease both; }
+    .card:hover { box-shadow: 0 4px 16px rgba(26,115,232,0.12), 0 2px 6px rgba(60,64,67,0.10); transform: translateY(-1px); }
+    @keyframes cardFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .left-col .card              { animation-delay: 0.05s; }
+    .info-bar .card:nth-child(1) { animation-delay: 0.10s; }
+    .info-bar .card:nth-child(2) { animation-delay: 0.18s; }
+    .info-bar .card:nth-child(3) { animation-delay: 0.26s; }
+    .right-col > .card           { animation-delay: 0.20s; }
+    .card-header { padding: 12px 20px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--accent); background: #e8f0fe; border-bottom: 1px solid #c5d8fd; }
+    .card-body { padding: 20px; }
+
+    /* ── Form rows ── */
+    .form-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
+    .form-row label { font-size: 13px; font-weight: 500; color: var(--text-muted); min-width: 100px; text-align: right; }
+    .form-row input, .form-row select { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--card); color: var(--text); transition: border-color 0.2s, box-shadow 0.2s; }
+    .form-row input:focus, .form-row select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); }
+    .form-row .currency { position: relative; }
+    .form-row .currency::before { content: '$'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 14px; pointer-events: none; z-index: 1; }
+    .form-row .currency input { padding-left: 22px; }
+    .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+    /* ── Summary rows ── */
+    .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 20px; color: var(--text); }
+    .summary-row.total { font-weight: 700; font-size: 26px; color: var(--accent); border-top: 2px solid #c5d8fd; padding-top: 10px; margin-top: 6px; }
+    .summary-row.equity-positive { color: var(--success); }
+    .summary-row.equity-negative { color: var(--danger); }
+
+    /* ── Right column ── */
+    .right-col { display: flex; flex-direction: column; gap: 24px; }
+    .info-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .info-bar .card-body { padding: 16px 20px; }
+    .info-field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+    .info-field input, .info-field select { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--input-bg); color: var(--text); transition: border-color 0.2s, box-shadow 0.2s; }
+    .info-field input:focus, .info-field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); background: #fff; }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; position: relative; background: #f8f9fa; border-bottom: 1px solid var(--border); overflow: hidden; }
+    .tab { flex: 1; padding: 13px 20px; text-align: center; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--text-muted); transition: color 0.2s, background 0.2s; position: relative; z-index: 1; }
+    .tab:hover { background: #e8f0fe; color: var(--accent); }
+    .tab.active { background: #ffffff; color: var(--accent); font-weight: 600; }
+    .tab-indicator { position: absolute; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--accent); transition: left 0.3s cubic-bezier(0.4,0,0.2,1), width 0.3s cubic-bezier(0.4,0,0.2,1), background 0.3s ease; left: 0; width: 25%; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: tabFadeIn 0.2s ease both; }
+    @keyframes tabFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    #tab-finance.active    { border-top: 3px solid #1a73e8; }
+    #tab-lease.active      { border-top: 3px solid #1e8e3e; }
+    #tab-comparison.active { border-top: 3px solid #e37400; }
+    #tab-cash.active       { border-top: 3px solid #8430ce; }
+
+    /* ── Calc tables ── */
+    .calc-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .calc-table th { padding: 10px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border); background: #f8f9fa; }
+    .calc-table td { padding: 10px 14px; text-align: center; border-bottom: 1px solid var(--border); background: #ffffff; transition: background 0.15s; }
+    .calc-table tbody tr:hover td { background: #f1f3f4; }
+    .calc-table td input { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); text-align: center; font-size: 14px; background: var(--input-bg); color: var(--text); transition: border-color 0.2s, box-shadow 0.2s; }
+    .calc-table td input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); background: #fff; }
+    .calc-table .term-label { font-weight: 700; color: var(--accent); background: #e8f0fe; }
+    .calc-table .payment { font-weight: 700; font-size: 32px; color: var(--accent); letter-spacing: -0.5px; font-variant-numeric: tabular-nums; }
+    .calc-table td.out { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); }
+    #tab-finance .calc-table tbody tr:nth-child(1) .term-label { border-left: 3px solid #1a73e8; padding-left: 11px; }
+    #tab-finance .calc-table tbody tr:nth-child(2) .term-label { border-left: 3px solid #4285f4; padding-left: 11px; }
+    #tab-finance .calc-table tbody tr:nth-child(3) .term-label { border-left: 3px solid #8ab4f8; padding-left: 11px; }
+    #tab-lease .calc-table tbody tr:nth-child(1) .term-label { border-left: 3px solid #1e8e3e; padding-left: 11px; }
+    #tab-lease .calc-table tbody tr:nth-child(2) .term-label { border-left: 3px solid #34a853; padding-left: 11px; }
+
+    /* ── Comparison grid ── */
+    .comparison-grid { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .comparison-grid th { padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: #ffffff; background: #1a73e8; text-align: center; font-weight: 600; }
+    .comparison-grid th:first-child { text-align: left; border-radius: var(--radius-sm) 0 0 0; }
+    .comparison-grid th:last-child  { border-radius: 0 var(--radius-sm) 0 0; }
+    .comparison-grid td { padding: 10px 12px; text-align: center; border-bottom: 1px solid var(--border); background: #ffffff; font-variant-numeric: tabular-nums; font-size: 20px; color: var(--text); transition: background 0.15s; }
+    .comparison-grid tr:hover td { background: #f1f3f4; }
+    .comparison-grid .row-label { text-align: left; font-weight: 600; color: var(--text); white-space: nowrap; }
+    .comparison-grid .row-label.finance-row { border-left: 3px solid #1a73e8; padding-left: 12px; }
+    .comparison-grid .row-label.lease-row   { border-left: 3px solid #1e8e3e; padding-left: 12px; }
+    .comparison-grid .best { color: #1e8e3e; font-weight: 700; background: #e6f4ea; }
+    .comparison-grid tr:hover .best { background: #ceead6; }
+
+    /* ── Down payment inputs ── */
+    .down-inputs { display: flex; gap: 12px; padding: 16px 20px; background: #f8f9fa; border-bottom: 1px solid var(--border); align-items: center; }
+    .down-inputs label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); white-space: nowrap; }
+    .down-inputs input { width: 110px; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); text-align: center; font-size: 14px; background: white; color: var(--text); transition: border-color 0.2s, box-shadow 0.2s; }
+    .down-inputs input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); }
+
+    /* ── LTV bar ── */
+    .ltv-bar { display: flex; gap: 12px; padding: 14px 20px; background: #f8f9fa; border-top: 1px solid var(--border); }
+    .ltv-item { text-align: center; flex: 1; }
+    .ltv-item .ltv-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .ltv-item .ltv-value { font-size: 30px; font-weight: 700; color: var(--text); line-height: 1.2; margin: 2px 0 6px; font-variant-numeric: tabular-nums; transition: color 0.3s; }
+    .ltv-item .ltv-value.warning { color: var(--warning); }
+    .ltv-item .ltv-value.over    { color: var(--danger); }
+    .ltv-item .ltv-value.ok      { color: var(--success); }
+    .ltv-progress { width: 100%; height: 4px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .ltv-progress-fill { height: 100%; border-radius: 3px; background: var(--success); transition: width 0.4s cubic-bezier(0.4,0,0.2,1), background 0.4s; }
+    .ltv-progress-fill.warning { background: var(--warning); }
+    .ltv-progress-fill.over    { background: var(--danger); }
+
+    /* ── Cash breakdown ── */
+    .cash-breakdown-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+    .cash-breakdown-table td { padding: 11px 16px; border-bottom: 1px solid var(--border); }
+    .cb-label { color: var(--text-muted); font-weight: 500; font-size: 14px; }
+    .cb-value { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; font-size: 15px; color: var(--text); }
+    .cb-section-head td { background: #f8f9fa; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); padding: 7px 16px; border-bottom: 1px solid var(--border); }
+    .cb-otd-row td { background: #e8f0fe; font-size: 17px; font-weight: 700; border-top: 2px solid #c5d8fd; border-bottom: 2px solid #c5d8fd; padding: 13px 16px; }
+    .cb-otd-value { color: var(--accent); }
+    .cb-equity-row td { border-bottom: 1px solid var(--border); }
+    .cb-due-row td { background: #f5f0ff; border-top: 2px solid #d8b4fe; padding: 14px 16px; }
+    .cb-due-label { font-size: 15px; font-weight: 700; color: #8430ce; }
+    .cb-due-value { color: #8430ce; font-size: 26px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* ── Buttons ── */
+    .btn { padding: 10px 24px; border: none; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease; position: relative; overflow: hidden; user-select: none; }
+    .btn:hover  { transform: translateY(-1px) scale(1.02); }
+    .btn:active { transform: translateY(0) scale(0.98); }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 14px rgba(26,115,232,0.4); }
+    .btn-outline { background: transparent; color: var(--accent); border: 1px solid #dadce0; }
+    .btn-outline:hover { background: #e8f0fe; border-color: #c5d8fd; box-shadow: var(--shadow-md); }
+    .ripple-wave { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4); transform: scale(0); animation: rippleAnim 0.55s ease-out forwards; pointer-events: none; }
+    .btn-outline .ripple-wave { background: rgba(26,115,232,0.15); }
+    @keyframes rippleAnim { to { transform: scale(2.8); opacity: 0; } }
+
+    /* ── Modal overlay ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(32,33,36,0.55); display: flex; align-items: flex-start; justify-content: center; z-index: 500; padding: 40px 20px; overflow-y: auto; }
+    .modal-box { background: white; border-radius: var(--radius); box-shadow: var(--shadow-lg); width: 100%; max-width: 940px; animation: cardFadeIn 0.2s ease both; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--border); }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
+    .modal-close { width: 32px; height: 32px; border: none; background: none; cursor: pointer; border-radius: 50%; font-size: 18px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+    .modal-close:hover { background: #f1f3f4; color: var(--text); }
+    .modal-body { padding: 20px 24px; }
+    .modal-search { width: 100%; padding: 10px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; margin-bottom: 16px; transition: border-color 0.2s, box-shadow 0.2s; }
+    .modal-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); }
+    .modal-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .modal-table th { padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border); background: #f8f9fa; }
+    .modal-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .modal-table tbody tr { cursor: pointer; }
+    .modal-table tbody tr:hover td { background: #f1f3f4; }
+
+    /* ── Admin action buttons ── */
+    .aab { padding: 4px 12px; border: none; border-radius: 14px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .aab-approve { background: #e6f4ea; color: #1e8e3e; } .aab-approve:hover { background: #ceead6; }
+    .aab-promote { background: #e8f0fe; color: #1a73e8; } .aab-promote:hover { background: #d2e3fc; }
+    .aab-revoke  { background: #fce8e6; color: #c5221f; } .aab-revoke:hover  { background: #f5c6c4; }
+
+    /* ── Deal status label ── */
+    .deal-status-label { font-size: 12px; color: var(--text-muted); background: #f8f9fa; border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; white-space: nowrap; }
+    .deal-status-label.editing { color: #e37400; border-color: #f9ab00; background: #fef7e0; }
+
+    /* ── Toast ── */
+    #toastContainer { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { padding: 12px 20px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; box-shadow: var(--shadow-lg); transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); max-width: 320px; line-height: 1.4; pointer-events: auto; }
+    .toast-show { transform: translateX(0); }
+    .toast-success { background: #1e8e3e; color: white; }
+    .toast-error   { background: #c5221f; color: white; }
+    .toast-info    { background: var(--accent); color: white; }
+
+    /* ── Responsive ── */
+    @media (max-width: 1024px) { .app { grid-template-columns: 1fr; } .info-bar { grid-template-columns: 1fr; } }
+
+    /* ── Print ── */
+    #printDealHeader { display: none; }
+    #printPricingSection { display: none; }
+    @media print {
+      @page { margin: 0.6in; }
+      .header { display: none; }
+      body { background: white; }
+      .card { box-shadow: none; animation: none; transform: none; border: 1px solid #e0e0e0; }
+      .card:hover { transform: none; box-shadow: none; }
+      .btn { display: none !important; }
+      .tabs { display: none !important; }
+      .left-col { display: none !important; }
+      .info-bar { display: none !important; }
+      .right-col > div:last-child { display: none !important; }
+      .tab-content { display: none !important; }
+      .tab-content.active { display: block !important; border-top: none !important; }
+      .calc-table td input, .down-inputs input { border: none; background: transparent; box-shadow: none; padding: 4px 0; font-weight: 600; }
+      .app { display: block; padding: 0; max-width: 100%; }
+      .right-col { display: block; }
+      #printDealHeader { display: block !important; margin-bottom: 14px; }
+      #printPricingSection { display: block !important; margin-bottom: 14px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px 16px; background: #fafafa; }
+      .pp-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 24px; }
+      .pp-col-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #5f6368; font-weight: 600; margin-bottom: 6px; }
+      .pp-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; border-bottom: 1px solid #eeeeee; }
+      .pp-row:last-child { border-bottom: none; }
+      .pp-row .pp-lbl { color: #5f6368; }
+      .pp-row .pp-val { font-weight: 600; color: #202124; }
+      .pp-row.pp-total { border-top: 2px solid #c5d8fd; border-bottom: none; padding-top: 6px; margin-top: 2px; }
+      .pp-row.pp-total .pp-lbl { color: #1a73e8; font-weight: 700; font-size: 12px; }
+      .pp-row.pp-total .pp-val { color: #1a73e8; font-size: 14px; font-weight: 700; }
+      .pp-otd-box { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #e8f0fe; border-radius: 6px; padding: 10px 14px; border: 1px solid #c5d8fd; text-align: center; }
+      .pp-otd-box .pp-otd-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #1a73e8; font-weight: 600; }
+      .pp-otd-box .pp-otd-val { font-size: 22px; font-weight: 700; color: #1a73e8; margin-top: 3px; }
+      .ltv-bar { border-top: 1px solid #e0e0e0; background: #fafafa; }
+      .ltv-progress { display: none; }
+      .row-disabled { display: none !important; }
+      .row-check { display: none !important; }
+
+      /* Shrink table content to fit one page width */
+      .calc-table { font-size: 11px; table-layout: fixed; width: 100%; }
+      .calc-table th { font-size: 9px; padding: 6px 6px; letter-spacing: 0; }
+      .calc-table td { font-size: 11px; padding: 6px 6px; }
+      .calc-table .payment { font-size: 16px !important; font-weight: 700; }
+      .calc-table td.out { font-size: 13px !important; font-weight: 600; }
+      .calc-table .term-label { font-size: 12px; }
+      .calc-table td input { font-size: 11px; padding: 2px 4px; }
+      .ltv-bar { padding: 8px 12px; }
+      .ltv-item .ltv-value { font-size: 14px !important; }
+      .ltv-item .ltv-label { font-size: 9px; }
+      .down-inputs { padding: 8px 12px; }
+      .down-inputs input { font-size: 11px; width: 80px; }
+      .comparison-grid { font-size: 11px; }
+      .comparison-grid th { font-size: 9px; padding: 6px 8px; }
+      .comparison-grid td { font-size: 12px; padding: 6px 8px; }
+      .cash-breakdown-table { font-size: 13px; }
+      .cb-due-value { font-size: 18px !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN SCREEN ══════════ -->
+<div id="loginScreen" class="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo">Auto<span>Desk</span> Pro</div>
+    <div class="auth-subtitle">Finance &amp; Lease Calculator</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabSignIn" onclick="showLoginTab()">Sign In</button>
+      <button class="auth-tab" id="tabSignUp" onclick="showSignupTab()">Create Account</button>
+    </div>
+    <form id="loginForm" onsubmit="doLogin(event)">
+      <div class="auth-field"><label>Email</label><input type="email" id="loginEmail" required placeholder="you@example.com" autocomplete="email"></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="loginPassword" required placeholder="••••••••" autocomplete="current-password"></div>
+      <button type="submit" id="loginBtn" class="auth-btn">Sign In</button>
+    </form>
+    <form id="signupForm" style="display:none;" onsubmit="doSignup(event)">
+      <div class="auth-field"><label>Full Name</label><input type="text" id="signupName" required placeholder="John Smith" autocomplete="name"></div>
+      <div class="auth-field"><label>Email</label><input type="email" id="signupEmail" required placeholder="you@example.com" autocomplete="email"></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="signupPassword" required placeholder="Min 6 characters" minlength="6" autocomplete="new-password"></div>
+      <button type="submit" id="signupBtn" class="auth-btn">Create Account</button>
+      <div class="auth-note">New accounts require admin approval before access is granted.</div>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════ PENDING SCREEN ══════════ -->
+<div id="pendingScreen" class="auth-overlay" style="display:none;">
+  <div class="auth-card" style="text-align:center;">
+    <div class="auth-logo">Auto<span>Desk</span> Pro</div>
+    <div style="font-size:44px;margin:24px 0 12px;">⏳</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:10px;">Awaiting Approval</div>
+    <div style="color:var(--text-muted);font-size:14px;line-height:1.7;margin-bottom:24px;">Your account has been created and is pending admin approval.<br>You'll receive access once an admin approves your account.</div>
+    <button onclick="doLogout()" class="btn btn-outline">Sign Out</button>
+  </div>
+</div>
+
+<!-- ══════════ MAIN APP ══════════ -->
+<div id="mainApp" style="display:none;">
+
+<div class="header">
+  <div style="display:flex;align-items:center;gap:18px;flex:1;min-width:0;">
+    <h1>Auto<span>Desk</span> Pro</h1>
+    <div class="header-search">
+      <span class="header-search-icon">🔍</span>
+      <input type="text" class="header-search-input" id="headerSearchInput"
+             placeholder="Search deals by name, salesperson, dealer…"
+             onkeydown="if(event.key==='Enter')openLoadModal(this.value.trim())">
+    </div>
+  </div>
+  <div class="header-right-group">
+    <div class="header-date-small" id="headerDate"></div>
+    <button class="admin-pill" id="adminBtn" onclick="openAdminPanel()" style="display:none;">⚙ Admin</button>
+    <div class="user-menu-wrap">
+      <button class="user-menu-btn" onclick="toggleUserDropdown()" id="userMenuBtn">
+        <div class="user-avatar-circle" id="userAvatar"></div>
+        <span class="user-menu-name" id="userDisplayName"></span>
+        <span style="font-size:9px;color:var(--text-muted);">▼</span>
+      </button>
+      <div class="user-dropdown" id="userDropdown" style="display:none;">
+        <div class="user-dropdown-email" id="userDropdownEmail"></div>
+        <button class="user-dropdown-item danger" onclick="doLogout()">Sign Out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- LEFT COLUMN -->
+  <div class="left-col">
+    <div class="card">
+      <div class="card-header">Vehicle Pricing</div>
+      <div class="card-body">
+        <div class="form-row">
+          <label>MSRP</label>
+          <div class="currency" style="flex:1;position:relative;"><input type="text" id="msrp" value="24,159.00"></div>
+        </div>
+        <div class="form-row">
+          <label>Selling Price</label>
+          <div class="currency" style="flex:1;position:relative;"><input type="text" id="price" value="23,995.00" oninput="recalc()"></div>
+        </div>
+        <div class="form-row">
+          <label>Accessories</label>
+          <div class="currency" style="flex:1;position:relative;"><input type="text" id="accessories" value="0.00" oninput="recalc()"></div>
+        </div>
+        <div class="divider"></div>
+        <div class="form-row">
+          <label>Doc Fee</label>
+          <div class="currency" style="flex:1;position:relative;"><input type="text" id="docFee" value="100.00" oninput="recalc()"></div>
+        </div>
+        <div class="form-row" style="align-items:flex-start;">
+          <label style="padding-top:8px;">License</label>
+          <div style="flex:1;">
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div class="currency" style="flex:1;position:relative;">
+                <input type="text" id="license" value="0.00" oninput="licManual=true;recalc()" style="padding-left:22px;">
+              </div>
+              <button id="licAutoBtn" onclick="licManual=false;recalc()" title="Reset to CA DMV auto-calculation"
+                style="padding:6px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--accent);cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0;">↻ Auto</button>
+            </div>
+            <div id="licBreakdown" style="margin-top:7px;background:#f0f6ff;border:1px solid #c5d8fd;border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;line-height:1.8;"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Other Fees</label>
+          <div class="currency" style="flex:1;position:relative;"><input type="text" id="otherFees" value="0.00" oninput="recalc()"></div>
+        </div>
+        <div class="divider"></div>
+        <div class="form-row" style="margin-bottom:10px;">
+          <label>Tax Rate</label>
+          <input type="text" id="taxRate" value="6.00"
+            style="width:60px;flex:none;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;text-align:center;background:var(--input-bg);color:var(--text);transition:border-color 0.2s,box-shadow 0.2s;"
+            oninput="recalc()"
+            onfocus="this.style.borderColor='#1a73e8';this.style.boxShadow='0 0 0 3px rgba(26,115,232,0.15)'"
+            onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+          <span style="font-size:14px;color:var(--text-muted);">%</span>
+        </div>
+        <div class="summary-row"><span>Sales Tax</span><span id="salesTaxDisplay">$0.00</span></div>
+        <div class="summary-row total"><span>Total</span><span id="totalDisplay">$0.00</span></div>
+        <div class="divider"></div>
+        <div class="form-row">
+          <label>Trade Value</label>
+          <div class="currency" style="flex:1;position:relative;"><input type="text" id="tradeValue" value="0.00" oninput="recalc()"></div>
+        </div>
+        <div class="form-row">
+          <label>Trade Payoff</label>
+          <div class="currency" style="flex:1;position:relative;"><input type="text" id="tradePayoff" value="0.00" oninput="recalc()"></div>
+        </div>
+        <div class="summary-row" id="equityRow">
+          <span>Trade Equity</span><span id="equityDisplay">$0.00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="right-col">
+
+    <!-- Print-only deal header -->
+    <div id="printDealHeader">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;border-bottom:2px solid #1a73e8;margin-bottom:14px;">
+        <div>
+          <div style="font-size:20px;font-weight:700;color:#202124;letter-spacing:-0.3px;">Auto<span style="color:#1a73e8;">Desk</span> Pro</div>
+          <div style="font-size:11px;color:#5f6368;margin-top:2px;">Finance &amp; Lease Calculator</div>
+        </div>
+        <div style="text-align:right;font-size:12px;color:#5f6368;line-height:1.6;">
+          <div id="printDate"></div>
+          <div id="printTabLabel" style="font-weight:600;color:#202124;margin-top:2px;"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding-bottom:14px;border-bottom:1px solid #e0e0e0;margin-bottom:4px;">
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#5f6368;font-weight:600;">Customer</div><div id="printCustomer" style="font-weight:600;font-size:13px;margin-top:3px;color:#202124;">—</div></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#5f6368;font-weight:600;">Vehicle</div><div id="printVehicle" style="font-weight:600;font-size:13px;margin-top:3px;color:#202124;">—</div></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#5f6368;font-weight:600;">Stock #</div><div id="printStock" style="font-weight:600;font-size:13px;margin-top:3px;color:#202124;">—</div></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#5f6368;font-weight:600;">Salesperson</div><div id="printSalesperson" style="font-weight:600;font-size:13px;margin-top:3px;color:#202124;">—</div></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#5f6368;font-weight:600;">Dealer</div><div id="printDealer" style="font-weight:600;font-size:13px;margin-top:3px;color:#202124;">—</div></div>
+      </div>
+    </div>
+
+    <!-- Print-only pricing section -->
+    <div id="printPricingSection">
+      <div class="pp-grid">
+        <div>
+          <div class="pp-col-label">Vehicle &amp; Fees</div>
+          <div class="pp-row"><span class="pp-lbl">Selling Price</span><span class="pp-val" id="pp-price">—</span></div>
+          <div class="pp-row"><span class="pp-lbl">Accessories</span><span class="pp-val" id="pp-acc">—</span></div>
+          <div class="pp-row"><span class="pp-lbl">Doc Fee</span><span class="pp-val" id="pp-doc">—</span></div>
+          <div class="pp-row"><span class="pp-lbl" id="pp-tax-lbl">Sales Tax</span><span class="pp-val" id="pp-tax">—</span></div>
+          <div class="pp-row"><span class="pp-lbl">License &amp; Reg</span><span class="pp-val" id="pp-lic">—</span></div>
+          <div class="pp-row"><span class="pp-lbl">Other Fees</span><span class="pp-val" id="pp-other">—</span></div>
+        </div>
+        <div>
+          <div class="pp-col-label">Trade</div>
+          <div class="pp-row"><span class="pp-lbl">Trade Value</span><span class="pp-val" id="pp-tv">—</span></div>
+          <div class="pp-row"><span class="pp-lbl">Trade Payoff</span><span class="pp-val" id="pp-tp">—</span></div>
+          <div class="pp-row"><span class="pp-lbl" id="pp-eq-lbl">Trade Equity</span><span class="pp-val" id="pp-eq">—</span></div>
+          <div class="pp-row pp-total"><span class="pp-lbl">Total Out-the-Door</span><span class="pp-val" id="pp-otd-inline">—</span></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;">
+          <div class="pp-otd-box">
+            <div class="pp-otd-lbl">Cash Due at Signing</div>
+            <div class="pp-otd-val" id="pp-cash-due">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deal Info -->
+    <div class="info-bar">
+      <div class="card">
+        <div class="card-body">
+          <div class="info-field"><label>Customer</label><input type="text" id="customerName" placeholder="Customer name"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="info-field"><label>Vehicle</label><input type="text" id="vehicleName" placeholder="Year Make Model"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="info-field" style="display:flex;gap:12px;margin-bottom:10px;">
+            <div style="flex:1;"><label>Stock #</label><input type="text" id="stockNum" placeholder="Stock #"></div>
+            <div style="flex:1;"><label>Salesperson</label><input type="text" id="salesperson" placeholder="Name"></div>
+          </div>
+          <div class="info-field"><label>Dealer Name</label><input type="text" id="dealerName" placeholder="Dealership name"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Finance & Lease Tabs -->
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('finance', this)">Finance</button>
+        <button class="tab" onclick="switchTab('lease', this)">Lease</button>
+        <button class="tab" onclick="switchTab('comparison', this)">Payment Comparison</button>
+        <button class="tab" onclick="switchTab('cash', this)">Cash</button>
+        <div class="tab-indicator" id="tabIndicator"></div>
+      </div>
+
+      <!-- FINANCE TAB -->
+      <div class="tab-content active" id="tab-finance">
+        <table class="calc-table">
+          <thead><tr><th class="row-check"></th><th>Term</th><th>APR %</th><th>Rebate</th><th>Down Payment</th><th>Amount Financed</th><th>Monthly Payment</th><th>Total Cost</th></tr></thead>
+          <tbody>
+            <tr id="finRow48">
+              <td class="row-check"><input type="checkbox" id="finCheck48" checked onchange="toggleFinRow(48)"></td>
+              <td class="term-label">48 mo</td>
+              <td><input type="text" id="finRate48"   value="5.9"   oninput="recalc()"></td>
+              <td><input type="text" id="finRebate48" value="0"     oninput="recalc()"></td>
+              <td><input type="text" id="finDown48"   value="2,000" oninput="recalc()"></td>
+              <td id="finAmount48"  class="out" style="color:#94a3b8;">—</td>
+              <td id="finPayment48" class="payment">—</td>
+              <td id="finTotal48"   class="out" style="color:#94a3b8;">—</td>
+            </tr>
+            <tr id="finRow60">
+              <td class="row-check"><input type="checkbox" id="finCheck60" checked onchange="toggleFinRow(60)"></td>
+              <td class="term-label">60 mo</td>
+              <td><input type="text" id="finRate60"   value="6.4"   oninput="recalc()"></td>
+              <td><input type="text" id="finRebate60" value="0"     oninput="recalc()"></td>
+              <td><input type="text" id="finDown60"   value="2,000" oninput="recalc()"></td>
+              <td id="finAmount60"  class="out" style="color:#94a3b8;">—</td>
+              <td id="finPayment60" class="payment">—</td>
+              <td id="finTotal60"   class="out" style="color:#94a3b8;">—</td>
+            </tr>
+            <tr id="finRow72">
+              <td class="row-check"><input type="checkbox" id="finCheck72" checked onchange="toggleFinRow(72)"></td>
+              <td class="term-label">72 mo</td>
+              <td><input type="text" id="finRate72"   value="6.9"   oninput="recalc()"></td>
+              <td><input type="text" id="finRebate72" value="0"     oninput="recalc()"></td>
+              <td><input type="text" id="finDown72"   value="2,000" oninput="recalc()"></td>
+              <td id="finAmount72"  class="out" style="color:#94a3b8;">—</td>
+              <td id="finPayment72" class="payment">—</td>
+              <td id="finTotal72"   class="out" style="color:#94a3b8;">—</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="ltv-bar">
+          <div class="ltv-item"><div class="ltv-label">LTV 48mo</div><div class="ltv-value" id="ltv48">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="ltvFill48" style="width:0%"></div></div></div>
+          <div class="ltv-item"><div class="ltv-label">LTV 60mo</div><div class="ltv-value" id="ltv60">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="ltvFill60" style="width:0%"></div></div></div>
+          <div class="ltv-item"><div class="ltv-label">LTV 72mo</div><div class="ltv-value" id="ltv72">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="ltvFill72" style="width:0%"></div></div></div>
+        </div>
+      </div>
+
+      <!-- LEASE TAB -->
+      <div class="tab-content" id="tab-lease">
+        <table class="calc-table">
+          <thead><tr><th class="row-check"></th><th>Term</th><th>Money Factor</th><th>Rebate</th><th>Cap Reduction</th><th>Residual %</th><th>Residual $</th><th>Miles/Yr</th><th>Monthly Payment</th></tr></thead>
+          <tbody>
+            <tr id="leaseRow24">
+              <td class="row-check"><input type="checkbox" id="leaseCheck24" checked onchange="toggleLeaseRow(24)"></td>
+              <td class="term-label">24 mo</td>
+              <td><input type="text" id="leaseMF24"     value="0.00125" oninput="recalc()"></td>
+              <td><input type="text" id="leaseRebate24" value="0"       oninput="recalc()"></td>
+              <td><input type="text" id="leaseCap24"    value="2,000"   oninput="recalc()"></td>
+              <td><input type="text" id="leaseResid24"  value="62"      oninput="recalc()"></td>
+              <td id="leaseResidDollar24" class="out" style="color:#94a3b8;">—</td>
+              <td><input type="text" id="leaseMiles24"  value="12,000"  oninput="recalc()"></td>
+              <td id="leasePayment24" class="payment">—</td>
+            </tr>
+            <tr id="leaseRow36">
+              <td class="row-check"><input type="checkbox" id="leaseCheck36" checked onchange="toggleLeaseRow(36)"></td>
+              <td class="term-label">36 mo</td>
+              <td><input type="text" id="leaseMF36"     value="0.00125" oninput="recalc()"></td>
+              <td><input type="text" id="leaseRebate36" value="0"       oninput="recalc()"></td>
+              <td><input type="text" id="leaseCap36"    value="2,000"   oninput="recalc()"></td>
+              <td><input type="text" id="leaseResid36"  value="55"      oninput="recalc()"></td>
+              <td id="leaseResidDollar36" class="out" style="color:#94a3b8;">—</td>
+              <td><input type="text" id="leaseMiles36"  value="12,000"  oninput="recalc()"></td>
+              <td id="leasePayment36" class="payment">—</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="ltv-bar">
+          <div class="ltv-item"><div class="ltv-label">Equiv. APR (24mo)</div><div class="ltv-value" id="leaseAPR24">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="leaseAPRFill24" style="width:0%"></div></div></div>
+          <div class="ltv-item"><div class="ltv-label">Equiv. APR (36mo)</div><div class="ltv-value" id="leaseAPR36">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="leaseAPRFill36" style="width:0%"></div></div></div>
+          <div class="ltv-item"><div class="ltv-label">Total Lease Cost (24)</div><div class="ltv-value" id="leaseTotalCost24" style="font-size:15px;">—</div><div class="ltv-progress" style="background:transparent;"></div></div>
+          <div class="ltv-item"><div class="ltv-label">Total Lease Cost (36)</div><div class="ltv-value" id="leaseTotalCost36" style="font-size:15px;">—</div><div class="ltv-progress" style="background:transparent;"></div></div>
+        </div>
+      </div>
+
+      <!-- CASH TAB -->
+      <div class="tab-content" id="tab-cash">
+        <div style="padding:28px 40px;">
+          <div style="max-width:560px;margin:0 auto;">
+            <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);font-weight:600;margin-bottom:16px;">Cash Purchase Summary</div>
+            <table class="cash-breakdown-table">
+              <tbody>
+                <tr class="cb-section-head"><td colspan="2">Vehicle &amp; Fees</td></tr>
+                <tr><td class="cb-label">Selling Price</td><td class="cb-value" id="cashPrice">—</td></tr>
+                <tr><td class="cb-label">Accessories</td><td class="cb-value" id="cashAccessories">—</td></tr>
+                <tr><td class="cb-label">Doc Fee</td><td class="cb-value" id="cashDocFee">—</td></tr>
+                <tr class="cb-section-head"><td colspan="2">Government Fees &amp; Tax</td></tr>
+                <tr><td class="cb-label">Sales Tax (<span id="cashTaxRateLabel">—</span>%)</td><td class="cb-value" id="cashSalesTax">—</td></tr>
+                <tr><td class="cb-label">License &amp; Registration</td><td class="cb-value" id="cashLicense">—</td></tr>
+                <tr><td class="cb-label">Other Fees</td><td class="cb-value" id="cashOtherFees">—</td></tr>
+              </tbody>
+              <tfoot>
+                <tr class="cb-otd-row"><td class="cb-label cb-otd-label">Total Out-the-Door</td><td class="cb-value cb-otd-value" id="cashTotal">—</td></tr>
+                <tr class="cb-equity-row" id="cashEquityRow" style="display:none;"><td class="cb-label" id="cashEquityLabel">Trade Equity</td><td class="cb-value" id="cashTradeEquity">—</td></tr>
+                <tr class="cb-due-row"><td class="cb-due-label">Cash Due at Signing</td><td class="cb-due-value" id="cashDue">—</td></tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPARISON TAB -->
+      <div class="tab-content" id="tab-comparison">
+        <div class="down-inputs">
+          <label>Compare Down Payments:</label>
+          <span style="font-size:13px;color:var(--text-muted);">$</span><input type="text" id="compDown1" value="1,000" oninput="recalc()">
+          <span style="font-size:13px;color:var(--text-muted);">$</span><input type="text" id="compDown2" value="2,000" oninput="recalc()">
+          <span style="font-size:13px;color:var(--text-muted);">$</span><input type="text" id="compDown3" value="3,000" oninput="recalc()">
+          <span style="font-size:13px;color:var(--text-muted);">$</span><input type="text" id="compDown4" value="5,000" oninput="recalc()">
+        </div>
+        <table class="comparison-grid">
+          <thead><tr><th>Option</th><th id="compHead1">$1,000 Down</th><th id="compHead2">$2,000 Down</th><th id="compHead3">$3,000 Down</th><th id="compHead4">$5,000 Down</th></tr></thead>
+          <tbody id="compBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div style="display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
+      <span class="deal-status-label" id="dealStatusLabel">New Deal</span>
+      <button class="btn btn-outline" onclick="resetAll()">Reset All</button>
+      <button class="btn btn-outline" onclick="openLoadModal('')">📂 Load Deal</button>
+      <button class="btn btn-primary" id="saveDealBtn" onclick="saveDeal()">💾 Save Deal</button>
+      <button class="btn btn-outline" onclick="window.print()">🖨 Print / Save as PDF</button>
+    </div>
+
+  </div><!-- end right-col -->
+</div><!-- end app -->
+</div><!-- end mainApp -->
+
+<!-- ══════════ ADMIN MODAL ══════════ -->
+<div id="adminModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeAdminPanel()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">⚙ User Management</span>
+      <button class="modal-close" onclick="closeAdminPanel()">✕</button>
+    </div>
+    <div class="modal-body">
+      <table class="modal-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody id="adminUsersBody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ LOAD DEAL MODAL ══════════ -->
+<div id="loadDealModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeLoadModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">📂 Load Deal</span>
+      <button class="modal-close" onclick="closeLoadModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="text" id="dealSearchInput" class="modal-search"
+             placeholder="Search by customer name, vehicle, salesperson, dealer, stock #…"
+             oninput="debouncedSearch()" onkeydown="if(event.key==='Enter')searchDeals()">
+      <table class="modal-table">
+        <thead><tr><th>Customer</th><th>Vehicle</th><th>Salesperson</th><th>Dealer</th><th>Total OTD</th><th>Updated</th><th></th></tr></thead>
+        <tbody id="dealSearchResults"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Type to search or press Enter to load all deals</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TOASTS ══════════ -->
+<div id="toastContainer"></div>
+
+<script>
+  // ── Supabase ─────────────────────────────────────────────────
+  const SUPA_URL = 'https://dxuajsfsipkqlpktcuij.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4dWFqc2ZzaXBrcWxwa3RjdWlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTczOTIsImV4cCI6MjA5Mjg5MzM5Mn0.Rs7712kycT9TBIkd5XevkQ3Mc_Kpidejd10nflSKQjk';
+  const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  // ── App state ─────────────────────────────────────────────────
+  let currentUser  = null;
+  let currentRole  = null;
+  let activeDealId = null;
+  let dealLeadId   = null; // CRM lead this deal is linked to
+
+  // ── Screen helpers ────────────────────────────────────────────
+  function showScreen(id) {
+    ['loginScreen','pendingScreen','mainApp'].forEach(s => {
+      const el = document.getElementById(s);
+      if (el) el.style.display = (s === id) ? (s === 'mainApp' ? 'block' : 'flex') : 'none';
+    });
+  }
+
+  // ── Auth tab toggle ───────────────────────────────────────────
+  function showLoginTab() {
+    document.getElementById('loginForm').style.display  = '';
+    document.getElementById('signupForm').style.display = 'none';
+    document.getElementById('tabSignIn').classList.add('active');
+    document.getElementById('tabSignUp').classList.remove('active');
+  }
+  function showSignupTab() {
+    document.getElementById('loginForm').style.display  = 'none';
+    document.getElementById('signupForm').style.display = '';
+    document.getElementById('tabSignIn').classList.remove('active');
+    document.getElementById('tabSignUp').classList.add('active');
+  }
+
+  // ── Init auth ─────────────────────────────────────────────────
+  async function initAuth() {
+    // SSO: if CRM passed session tokens in URL, restore them automatically
+    const p = new URLSearchParams(window.location.search);
+    if (p.has('access_token') && p.has('refresh_token')) {
+      await sb.auth.setSession({
+        access_token:  p.get('access_token'),
+        refresh_token: p.get('refresh_token'),
+      });
+      // Remove tokens from address bar so they don't linger
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete('access_token');
+      clean.searchParams.delete('refresh_token');
+      window.history.replaceState({}, '', clean.toString());
+    }
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      await onSignIn(session.user);
+    } else {
+      showScreen('loginScreen');
+    }
+    sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN')  await onSignIn(session.user);
+      if (event === 'SIGNED_OUT') { currentUser = null; currentRole = null; activeDealId = null; showScreen('loginScreen'); }
+    });
+  }
+
+  async function onSignIn(user) {
+    currentUser = user;
+    let { data: profile } = await sb.from('fd_user_profiles').select('*').eq('id', user.id).maybeSingle();
+    if (!profile) {
+      const { data: cnt } = await sb.rpc('fd_user_count');
+      const role = (cnt === 0 || cnt === '0') ? 'admin' : 'pending';
+      const { data: created } = await sb.from('fd_user_profiles').insert({
+        id: user.id, email: user.email,
+        full_name: user.user_metadata?.full_name || user.email.split('@')[0],
+        role
+      }).select().single();
+      profile = created;
+    }
+    currentRole = profile?.role;
+    if (currentRole === 'admin' || currentRole === 'user') {
+      setupMainApp(profile);
+      showScreen('mainApp');
+    } else {
+      showScreen('pendingScreen');
+    }
+  }
+
+  // ── Login / Signup / Logout ───────────────────────────────────
+  async function doLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    const { error } = await sb.auth.signInWithPassword({
+      email: document.getElementById('loginEmail').value.trim(),
+      password: document.getElementById('loginPassword').value
+    });
+    btn.disabled = false; btn.textContent = 'Sign In';
+    if (error) showToast(error.message, 'error');
+  }
+
+  async function doSignup(e) {
+    e.preventDefault();
+    const btn = document.getElementById('signupBtn');
+    btn.disabled = true; btn.textContent = 'Creating account…';
+    const { error } = await sb.auth.signUp({
+      email: document.getElementById('signupEmail').value.trim(),
+      password: document.getElementById('signupPassword').value,
+      options: { data: { full_name: document.getElementById('signupName').value.trim() } }
+    });
+    btn.disabled = false; btn.textContent = 'Create Account';
+    if (error) { showToast(error.message, 'error'); return; }
+    showToast('Account created! Sign in below.', 'success');
+    showLoginTab();
+  }
+
+  async function doLogout() {
+    closeUserDropdown();
+    await sb.auth.signOut();
+  }
+
+  // ── Main app setup ────────────────────────────────────────────
+  function setupMainApp(profile) {
+    const name = profile.full_name || profile.email;
+    document.getElementById('userAvatar').textContent      = name[0].toUpperCase();
+    document.getElementById('userDisplayName').textContent = name;
+    document.getElementById('userDropdownEmail').textContent = profile.email;
+    document.getElementById('adminBtn').style.display      = profile.role === 'admin' ? '' : 'none';
+    document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', { weekday:'short', year:'numeric', month:'short', day:'numeric' });
+    activeDealId = null;
+    updateDealStatus();
+    recalc();
+    readUrlParams();
+  }
+
+  // ── Read CRM URL params ───────────────────────────────────────
+  function readUrlParams() {
+    const p = new URLSearchParams(window.location.search);
+    if (!p.has('lead_id')) return;
+    dealLeadId = p.get('lead_id');
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+    set('customerName', p.get('customer'));
+    set('vehicleName',  p.get('vehicle'));
+    set('salesperson',  p.get('salesperson'));
+    showToast('Deal linked to CRM lead — fill in details and Save.', 'info');
+  }
+
+  function updateDealStatus() {
+    const el = document.getElementById('dealStatusLabel');
+    if (!el) return;
+    if (activeDealId) {
+      el.textContent = 'Editing saved deal';
+      el.classList.add('editing');
+    } else {
+      el.textContent = 'New Deal';
+      el.classList.remove('editing');
+    }
+  }
+
+  // ── User dropdown ─────────────────────────────────────────────
+  function toggleUserDropdown() {
+    const dd = document.getElementById('userDropdown');
+    dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+  }
+  function closeUserDropdown() {
+    const dd = document.getElementById('userDropdown');
+    if (dd) dd.style.display = 'none';
+  }
+  document.addEventListener('click', e => {
+    const wrap = document.getElementById('userMenuBtn');
+    if (wrap && !wrap.contains(e.target)) closeUserDropdown();
+  });
+
+  // ── Row toggle (Finance / Lease) ──────────────────────────────
+  function toggleFinRow(term) {
+    const row = document.getElementById('finRow' + term);
+    if (row) row.classList.toggle('row-disabled', !document.getElementById('finCheck' + term).checked);
+  }
+  function toggleLeaseRow(term) {
+    const row = document.getElementById('leaseRow' + term);
+    if (row) row.classList.toggle('row-disabled', !document.getElementById('leaseCheck' + term).checked);
+  }
+
+  // ── Save deal ─────────────────────────────────────────────────
+  async function saveDeal() {
+    if (!currentUser) return showToast('Please sign in first', 'error');
+    const btn = document.getElementById('saveDealBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Saving…'; }
+    const deal = {
+      user_id:       currentUser.id,
+      lead_id:       dealLeadId || null,
+      customer_name: document.getElementById('customerName').value.trim() || null,
+      vehicle:       document.getElementById('vehicleName').value.trim()  || null,
+      stock_num:     document.getElementById('stockNum').value.trim()     || null,
+      salesperson:   document.getElementById('salesperson').value.trim()  || null,
+      dealer_name:   document.getElementById('dealerName').value.trim()   || null,
+      msrp:          parseNum('msrp'),
+      selling_price: parseNum('price'),
+      accessories:   parseNum('accessories'),
+      doc_fee:       parseNum('docFee'),
+      tax_rate:      parseNum('taxRate'),
+      license:       parseNum('license'),
+      other_fees:    parseNum('otherFees'),
+      trade_value:   parseNum('tradeValue'),
+      trade_payoff:  parseNum('tradePayoff'),
+      sales_tax:     parseFloat((document.getElementById('salesTaxDisplay').textContent || '').replace(/[$,]/g,'')) || 0,
+      total_otd:     parseFloat((document.getElementById('totalDisplay').textContent    || '').replace(/[$,]/g,'')) || 0,
+      finance_terms: captureFinanceTerms(),
+      lease_terms:   captureLeaseTerms(),
+    };
+    let error;
+    if (activeDealId) {
+      ({ error } = await sb.from('fd_deals').update({ ...deal, updated_at: new Date().toISOString() }).eq('id', activeDealId));
+    } else {
+      const { data, error: e } = await sb.from('fd_deals').insert(deal).select('id').single();
+      error = e;
+      if (data) activeDealId = data.id;
+    }
+    if (error) {
+      if (btn) { btn.disabled = false; btn.textContent = '💾 Save Deal'; btn.style.background = ''; }
+      showToast('Save failed: ' + error.message, 'error');
+    } else {
+      showToast(activeDealId ? 'Deal updated!' : 'Deal saved!', 'success');
+      updateDealStatus();
+      if (btn) {
+        btn.textContent = '✓ Saved!';
+        btn.style.background = '#1e8e3e';
+        setTimeout(() => { btn.disabled = false; btn.textContent = '💾 Save Deal'; btn.style.background = ''; }, 2500);
+      }
+      if (dealLeadId && window.opener) {
+        window.opener.postMessage({ type: 'fd_deal_saved', lead_id: dealLeadId }, '*');
+      }
+    }
+  }
+
+  function captureFinanceTerms() {
+    return [48,60,72].map(t => ({
+      term: t,
+      rate:    parseNum('finRate'+t),   rebate: parseNum('finRebate'+t), down: parseNum('finDown'+t),
+      amount:  parseFloat((document.getElementById('finAmount' +t)?.textContent||'').replace(/[$,]/g,''))||0,
+      payment: parseFloat((document.getElementById('finPayment'+t)?.textContent||'').replace(/[$,]/g,''))||0,
+      total:   parseFloat((document.getElementById('finTotal'  +t)?.textContent||'').replace(/[$,]/g,''))||0,
+    }));
+  }
+  function captureLeaseTerms() {
+    return [24,36].map(t => ({
+      term: t,
+      mf:      parseFloat(document.getElementById('leaseMF'+t)?.value)||0,
+      rebate:  parseNum('leaseRebate'+t), cap: parseNum('leaseCap'+t),
+      resid:   parseNum('leaseResid'+t),  miles: parseNum('leaseMiles'+t),
+      payment: parseFloat((document.getElementById('leasePayment'+t)?.textContent||'').replace(/[$,]/g,''))||0,
+    }));
+  }
+
+  // ── Load deal modal ───────────────────────────────────────────
+  let _searchTimer = null;
+  function debouncedSearch() {
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(searchDeals, 350);
+  }
+
+  function openLoadModal(prefill) {
+    document.getElementById('loadDealModal').style.display = 'flex';
+    const el = document.getElementById('dealSearchInput');
+    if (prefill) el.value = prefill;
+    el.focus();
+    searchDeals();
+  }
+  function closeLoadModal() { document.getElementById('loadDealModal').style.display = 'none'; }
+
+  async function searchDeals() {
+    const q     = (document.getElementById('dealSearchInput').value || '').trim();
+    const tbody = document.getElementById('dealSearchResults');
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">Searching…</td></tr>';
+    let query = sb.from('fd_deals').select('*').order('updated_at', { ascending: false }).limit(60);
+    if (q) query = query.or(`customer_name.ilike.%${q}%,vehicle.ilike.%${q}%,salesperson.ilike.%${q}%,dealer_name.ilike.%${q}%,stock_num.ilike.%${q}%`);
+    const { data, error } = await query;
+    if (error || !data?.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">${error ? 'Error: '+error.message : 'No deals found'}</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.map(d => `
+      <tr onclick="loadDeal('${d.id}')">
+        <td style="font-weight:600;">${d.customer_name||'—'}</td>
+        <td>${d.vehicle||'—'}</td>
+        <td>${d.salesperson||'—'}</td>
+        <td>${d.dealer_name||'—'}</td>
+        <td style="color:var(--accent);font-weight:600;">${d.total_otd?'$'+Number(d.total_otd).toLocaleString('en-US',{minimumFractionDigits:2}):'—'}</td>
+        <td style="color:var(--text-muted);font-size:12px;">${new Date(d.updated_at).toLocaleDateString()}</td>
+        <td><button class="aab aab-approve" onclick="event.stopPropagation();loadDeal('${d.id}')">Load</button></td>
+      </tr>`).join('');
+  }
+
+  async function loadDeal(id) {
+    const { data: d, error } = await sb.from('fd_deals').select('*').eq('id', id).single();
+    if (error || !d) return showToast('Could not load deal', 'error');
+    const set = (elId, val) => { const el = document.getElementById(elId); if (el) el.value = (val != null ? val : ''); };
+    set('customerName', d.customer_name); set('vehicleName', d.vehicle);
+    set('stockNum', d.stock_num);         set('salesperson', d.salesperson);
+    set('dealerName', d.dealer_name);     set('msrp', fmt(d.msrp||0));
+    set('price', fmt(d.selling_price||0));set('accessories', fmt(d.accessories||0));
+    set('docFee', fmt(d.doc_fee||0));     set('taxRate', d.tax_rate||'0');
+    set('license', fmt(d.license||0));    set('otherFees', fmt(d.other_fees||0));
+    set('tradeValue', fmt(d.trade_value||0)); set('tradePayoff', fmt(d.trade_payoff||0));
+    if (Array.isArray(d.finance_terms)) d.finance_terms.forEach(ft => {
+      set('finRate'+ft.term, ft.rate); set('finRebate'+ft.term, ft.rebate); set('finDown'+ft.term, fmt(ft.down||0));
+    });
+    if (Array.isArray(d.lease_terms)) d.lease_terms.forEach(lt => {
+      const mfEl = document.getElementById('leaseMF'+lt.term); if (mfEl) mfEl.value = lt.mf;
+      set('leaseRebate'+lt.term, lt.rebate); set('leaseCap'+lt.term, fmt(lt.cap||0));
+      set('leaseResid'+lt.term, lt.resid);   set('leaseMiles'+lt.term, fmt(lt.miles||0));
+    });
+    licManual = true;
+    activeDealId = id;
+    dealLeadId   = d.lead_id || null;
+    updateDealStatus();
+    recalc();
+    closeLoadModal();
+    showToast('Loaded: ' + (d.customer_name || 'Untitled deal'), 'success');
+  }
+
+  // ── Admin panel ───────────────────────────────────────────────
+  function openAdminPanel()  { document.getElementById('adminModal').style.display = 'flex'; loadAdminUsers(); }
+  function closeAdminPanel() { document.getElementById('adminModal').style.display = 'none'; }
+
+  async function loadAdminUsers() {
+    const tbody = document.getElementById('adminUsersBody');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">Loading…</td></tr>';
+    const { data, error } = await sb.from('fd_user_profiles').select('*').order('created_at', { ascending: false });
+    if (error) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--danger);">Error: ${error.message}</td></tr>`; return; }
+    const badge = r => { const c={admin:'#e8f0fe;color:#1a73e8',user:'#e6f4ea;color:#1e8e3e',pending:'#fef7e0;color:#e37400',revoked:'#fce8e6;color:#c5221f'}[r]||'#f1f3f4;color:#5f6368'; return `<span style="background:${c};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;">${r}</span>`; };
+    tbody.innerHTML = data.map(u => `
+      <tr>
+        <td style="font-weight:600;">${u.full_name||'—'}</td>
+        <td style="color:var(--text-muted);font-size:13px;">${u.email}</td>
+        <td>${badge(u.role)}</td>
+        <td style="color:var(--text-muted);font-size:12px;">${new Date(u.created_at).toLocaleDateString()}</td>
+        <td>
+          ${u.id === currentUser?.id
+            ? '<span style="font-size:12px;color:var(--text-muted);">You</span>'
+            : `<div style="display:flex;gap:6px;flex-wrap:wrap;">
+                ${(u.role==='pending'||u.role==='revoked') ? `<button class="aab aab-approve" onclick="setRole('${u.id}','user')">Approve</button>` : ''}
+                ${u.role!=='admin'   ? `<button class="aab aab-promote" onclick="setRole('${u.id}','admin')">Make Admin</button>` : ''}
+                ${u.role!=='revoked' ? `<button class="aab aab-revoke"  onclick="setRole('${u.id}','revoked')">Revoke</button>` : ''}
+               </div>`}
+        </td>
+      </tr>`).join('');
+  }
+
+  async function setRole(userId, role) {
+    const { error } = await sb.from('fd_user_profiles').update({ role }).eq('id', userId);
+    if (error) showToast('Error: ' + error.message, 'error');
+    else { showToast('Role updated to ' + role, 'success'); loadAdminUsers(); }
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────
+  function showToast(msg, type='info') {
+    const c = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    t.className = `toast toast-${type}`;
+    t.textContent = msg;
+    c.appendChild(t);
+    requestAnimationFrame(() => { requestAnimationFrame(() => t.classList.add('toast-show')); });
+    setTimeout(() => { t.classList.remove('toast-show'); setTimeout(() => t.remove(), 350); }, 3500);
+  }
+
+  // ── Print header + pricing section ───────────────────────────
+  window.onbeforeprint = function() {
+    const d = new Date();
+    document.getElementById('printDate').textContent = d.toLocaleDateString('en-US', { weekday:'short', year:'numeric', month:'short', day:'numeric' });
+    document.getElementById('printCustomer').textContent    = document.getElementById('customerName').value || '—';
+    document.getElementById('printVehicle').textContent     = document.getElementById('vehicleName').value  || '—';
+    document.getElementById('printStock').textContent       = document.getElementById('stockNum').value     || '—';
+    document.getElementById('printSalesperson').textContent = document.getElementById('salesperson').value  || '—';
+    document.getElementById('printDealer').textContent      = document.getElementById('dealerName').value   || '—';
+    const activeTab = document.querySelector('.tab.active');
+    document.getElementById('printTabLabel').textContent = (activeTab ? activeTab.textContent.trim() : '') + ' Summary';
+
+    // Pricing section
+    const price       = parseNum('price'),       accessories = parseNum('accessories'),
+          docFee      = parseNum('docFee'),       taxRate     = parseNum('taxRate'),
+          license     = parseNum('license'),      otherFees   = parseNum('otherFees'),
+          tradeValue  = parseNum('tradeValue'),   tradePayoff = parseNum('tradePayoff');
+    const salesTax    = (price + accessories) * (taxRate / 100);
+    const totalOTD    = price + accessories + docFee + salesTax + license + otherFees;
+    const equity      = tradeValue - tradePayoff;
+    const cashDue     = Math.max(0, totalOTD - equity);
+
+    document.getElementById('pp-price').textContent  = fmtDollar(price);
+    document.getElementById('pp-acc').textContent    = fmtDollar(accessories);
+    document.getElementById('pp-doc').textContent    = fmtDollar(docFee);
+    document.getElementById('pp-tax-lbl').textContent = 'Sales Tax (' + (taxRate % 1 === 0 ? taxRate.toFixed(0) : taxRate.toFixed(2)) + '%)';
+    document.getElementById('pp-tax').textContent    = fmtDollar(salesTax);
+    document.getElementById('pp-lic').textContent    = fmtDollar(license);
+    document.getElementById('pp-other').textContent  = fmtDollar(otherFees);
+    document.getElementById('pp-tv').textContent     = fmtDollar(tradeValue);
+    document.getElementById('pp-tp').textContent     = fmtDollar(tradePayoff);
+    document.getElementById('pp-eq-lbl').textContent = equity >= 0 ? 'Trade Equity' : 'Negative Equity';
+    document.getElementById('pp-eq').textContent     = (equity >= 0 ? '+' : '-') + fmtDollar(Math.abs(equity));
+    document.getElementById('pp-eq').style.color     = equity >= 0 ? '#1e8e3e' : '#c5221f';
+    document.getElementById('pp-otd-inline').textContent = fmtDollar(totalOTD);
+    document.getElementById('pp-cash-due').textContent   = fmtDollar(cashDue);
+  };
+
+  // ── Ripple ────────────────────────────────────────────────────
+  function attachRipple(btn) {
+    btn.addEventListener('click', function(e) {
+      const rect = this.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      const wave = document.createElement('span');
+      wave.classList.add('ripple-wave');
+      wave.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+      this.appendChild(wave);
+      wave.addEventListener('animationend', () => wave.remove());
+    });
+  }
+  document.querySelectorAll('.btn').forEach(attachRipple);
+
+  // ── Tab indicator ─────────────────────────────────────────────
+  const TAB_COLORS = { finance:'#1a73e8', lease:'#1e8e3e', comparison:'#e37400', cash:'#8430ce' };
+  function moveIndicator(activeBtn, color) {
+    const tabs = document.querySelectorAll('.tab');
+    const indicator = document.getElementById('tabIndicator');
+    let idx = 0;
+    tabs.forEach((t,i) => { if (t===activeBtn) idx=i; });
+    const pct = 100 / tabs.length;
+    indicator.style.left = (idx*pct)+'%';
+    indicator.style.width = pct+'%';
+    if (color) indicator.style.background = color;
+  }
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-'+tab).classList.add('active');
+    btn.classList.add('active');
+    moveIndicator(btn, TAB_COLORS[tab]);
+  }
+
+  // ── CA DMV License ────────────────────────────────────────────
+  let licManual = false;
+  function calcTIF(value) {
+    if (value< 5000) return 29; if (value<25000) return 66;
+    if (value<35000) return 132; if (value<60000) return 175; return 227;
+  }
+  function calcCALicense(price) {
+    const vlf=price*0.0065, reg=74, chp=30, tif=calcTIF(price), county=10;
+    return { vlf, reg, chp, tif, county, total: vlf+reg+chp+tif+county };
+  }
+  function updateLicenseField(price) {
+    if (licManual) return;
+    const f=calcCALicense(price), el=document.getElementById('license'), btn=document.getElementById('licAutoBtn');
+    if (el) el.value=fmt(f.total);
+    if (btn) { btn.style.background='#e8f0fe'; btn.style.color='var(--accent)'; }
+    const bd=document.getElementById('licBreakdown'); if (!bd) return;
+    const row=(label,val,note)=>`<div style="display:flex;justify-content:space-between;color:#3c4043;"><span style="color:#5f6368;">${label}${note?`<span style="font-size:10px;color:#9aa0a6;margin-left:4px;">${note}</span>`:''}</span><span style="font-weight:600;color:#202124;">${fmtDollar(val)}</span></div>`;
+    bd.innerHTML=row('VLF',f.vlf,'0.65% of price')+row('Registration',f.reg,'flat')+row('CHP Fee',f.chp,'flat')+row('TIF',f.tif,'tiered by value')+row('County Fee',f.county,'avg')+`<div style="display:flex;justify-content:space-between;border-top:1px solid #c5d8fd;margin-top:4px;padding-top:4px;"><span style="font-weight:700;color:#1a73e8;font-size:11px;text-transform:uppercase;letter-spacing:0.4px;">CA DMV Total</span><span style="font-weight:700;color:#1a73e8;">${fmtDollar(f.total)}</span></div>`;
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────
+  function parseNum(id) { const el=document.getElementById(id); if(!el) return 0; return parseFloat(el.value.replace(/,/g,''))||0; }
+  function fmt(n) { return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function fmtDollar(n) { return '$'+fmt(n); }
+
+  // ── Count-up animation ────────────────────────────────────────
+  function animateTo(el, newVal, formatFn) {
+    if (!el) return;
+    if (el._raf) { cancelAnimationFrame(el._raf); el._raf=null; }
+    const rawText=el.textContent.replace(/[$,\-]/g,'');
+    const from=parseFloat(rawText)||0;
+    if (Math.abs(from-newVal)<0.005) { el.textContent=formatFn(newVal); return; }
+    const dur=300, t0=performance.now();
+    function step(now) {
+      const p=Math.min((now-t0)/dur,1), ease=1-Math.pow(1-p,3);
+      el.textContent=formatFn(from+(newVal-from)*ease);
+      if (p<1) el._raf=requestAnimationFrame(step); else el._raf=null;
+    }
+    el._raf=requestAnimationFrame(step);
+  }
+
+  // ── Input formatting ──────────────────────────────────────────
+  function setupInputFormatting() {
+    const ids=['msrp','price','accessories','docFee','license','otherFees','tradeValue','tradePayoff',
+               'finDown48','finDown60','finDown72','finRebate48','finRebate60','finRebate72',
+               'leaseCap24','leaseCap36','leaseRebate24','leaseRebate36','leaseMiles24','leaseMiles36',
+               'compDown1','compDown2','compDown3','compDown4'];
+    ids.forEach(id => {
+      const el=document.getElementById(id); if (!el) return;
+      el.addEventListener('focus',function(){ const raw=parseFloat(this.value.replace(/,/g,'')); this.value=isNaN(raw)?'':(raw===0?'':String(raw)); this.select(); });
+      el.addEventListener('blur', function(){ const raw=parseFloat(this.value.replace(/,/g,'')); this.value=isNaN(raw)?'0.00':fmt(raw); recalc(); });
+    });
+  }
+
+  // ── LTV helper ────────────────────────────────────────────────
+  function setLTV(valueId, fillId, pct) {
+    const ltvEl=document.getElementById(valueId), fillEl=document.getElementById(fillId);
+    if (!ltvEl) return;
+    ltvEl.textContent=fmt(pct)+'%';
+    const zone=pct>120?'over':pct>100?'warning':'ok';
+    ltvEl.className='ltv-value '+zone;
+    if (fillEl) { fillEl.style.width=Math.min(pct,150)/150*100+'%'; fillEl.className='ltv-progress-fill'+(zone!=='ok'?' '+zone:''); }
+  }
+
+  // ── Finance payment ───────────────────────────────────────────
+  function calcLoanPayment(principal, annualRate, months) {
+    if (principal<=0) return 0;
+    if (annualRate<=0) return principal/months;
+    const r=annualRate/100/12;
+    return principal*(r*Math.pow(1+r,months))/(Math.pow(1+r,months)-1);
+  }
+
+  // ── Lease payment ─────────────────────────────────────────────
+  function calcLeasePayment(capCost, residualDollar, moneyFactor, months) {
+    if (capCost<=0) return 0;
+    return (capCost-residualDollar)/months+(capCost+residualDollar)*moneyFactor;
+  }
+
+  // ── Main recalc ───────────────────────────────────────────────
+  function recalc() {
+    const price=parseNum('price'), accessories=parseNum('accessories'), docFee=parseNum('docFee'),
+          license=parseNum('license'), otherFees=parseNum('otherFees'), taxRate=parseNum('taxRate'),
+          tradeValue=parseNum('tradeValue'), tradePayoff=parseNum('tradePayoff');
+    updateLicenseField(price);
+    const subtotal=price+accessories, salesTax=subtotal*(taxRate/100),
+          total=subtotal+docFee+salesTax+license+otherFees, equity=tradeValue-tradePayoff;
+    animateTo(document.getElementById('salesTaxDisplay'), salesTax, fmtDollar);
+    animateTo(document.getElementById('totalDisplay'),    total,    fmtDollar);
+    const eqEl=document.getElementById('equityDisplay');
+    eqEl.textContent=(equity>=0?'':'-')+fmtDollar(Math.abs(equity));
+    document.getElementById('equityRow').className='summary-row '+(equity>=0?'equity-positive':'equity-negative');
+
+    // Finance
+    [48,60,72].forEach(t => {
+      const rate=parseNum('finRate'+t), rebate=parseNum('finRebate'+t), down=parseNum('finDown'+t);
+      const af=total-down-equity-rebate, payment=calcLoanPayment(Math.max(0,af),rate,t),
+            totalCost=payment*t, ltv=price>0?(af/price*100):0;
+      animateTo(document.getElementById('finAmount' +t), Math.max(0,af), fmtDollar);
+      animateTo(document.getElementById('finPayment'+t), payment,        fmtDollar);
+      animateTo(document.getElementById('finTotal'  +t), totalCost,      fmtDollar);
+      setLTV('ltv'+t,'ltvFill'+t,ltv);
+    });
+
+    // Lease
+    [24,36].forEach(t => {
+      const mf=parseFloat(document.getElementById('leaseMF'+t).value)||0,
+            rebate=parseNum('leaseRebate'+t), capReduction=parseNum('leaseCap'+t),
+            residPct=parseNum('leaseResid'+t), residualDollar=price*(residPct/100),
+            netCap=(total-equity)-capReduction-rebate,
+            payment=calcLeasePayment(Math.max(0,netCap),residualDollar,mf,t),
+            equivAPR=mf*2400, totalLeaseCost=(payment*t)+capReduction;
+      document.getElementById('leaseResidDollar'+t).textContent=fmtDollar(residualDollar);
+      animateTo(document.getElementById('leasePayment'  +t), Math.max(0,payment), fmtDollar);
+      animateTo(document.getElementById('leaseTotalCost'+t), totalLeaseCost,       fmtDollar);
+      document.getElementById('leaseAPR'+t).textContent=fmt(equivAPR)+'%';
+      const aprFill=document.getElementById('leaseAPRFill'+t);
+      if (aprFill) { aprFill.style.width=Math.min(equivAPR,15)/15*100+'%'; aprFill.className='ltv-progress-fill'+(equivAPR>10?' over':equivAPR>7?' warning':''); }
+    });
+
+    // Comparison
+    const downs=[1,2,3,4].map(i=>parseNum('compDown'+i));
+    downs.forEach((d,i) => { document.getElementById('compHead'+(i+1)).textContent=fmtDollar(d)+' Down'; });
+    let html='';
+    [48,60,72].forEach(t => {
+      const rate=parseNum('finRate'+t), rebate=parseNum('finRebate'+t);
+      const pays=downs.map(d=>calcLoanPayment(Math.max(0,total-d-equity-rebate),rate,t));
+      const minPay=Math.min(...pays);
+      html+=`<tr><td class="row-label finance-row">Finance ${t} mo</td>`;
+      pays.forEach(p=>{ html+=`<td${p===minPay?' class="best"':''}>${fmtDollar(p)}</td>`; });
+      html+='</tr>';
+    });
+    [24,36].forEach(t => {
+      const mf=parseFloat(document.getElementById('leaseMF'+t).value)||0,
+            rebate=parseNum('leaseRebate'+t), res$=price*(parseNum('leaseResid'+t)/100);
+      const pays=downs.map(d=>{ const nc=(total-equity)-d-rebate; return calcLeasePayment(Math.max(0,nc),res$,mf,t); });
+      const minPay=Math.min(...pays);
+      html+=`<tr><td class="row-label lease-row">Lease ${t} mo</td>`;
+      pays.forEach(p=>{ html+=`<td${p===minPay?' class="best"':''}>${fmtDollar(Math.max(0,p))}</td>`; });
+      html+='</tr>';
+    });
+    document.getElementById('compBody').innerHTML=html;
+
+    // Cash breakdown
+    const cashPriceEl=document.getElementById('cashPrice');
+    if (cashPriceEl) {
+      cashPriceEl.textContent=fmtDollar(price);
+      document.getElementById('cashAccessories').textContent=fmtDollar(accessories);
+      document.getElementById('cashDocFee').textContent=fmtDollar(docFee);
+      document.getElementById('cashTaxRateLabel').textContent=taxRate%1===0?taxRate.toFixed(0):taxRate.toFixed(2);
+      document.getElementById('cashSalesTax').textContent=fmtDollar(salesTax);
+      document.getElementById('cashLicense').textContent=fmtDollar(license);
+      document.getElementById('cashOtherFees').textContent=fmtDollar(otherFees);
+      animateTo(document.getElementById('cashTotal'), total, fmtDollar);
+      const ceRow=document.getElementById('cashEquityRow'), ceLabel=document.getElementById('cashEquityLabel'), ceEl=document.getElementById('cashTradeEquity');
+      if (equity!==0) {
+        ceRow.style.display=''; ceLabel.textContent=equity>=0?'Less: Trade Equity':'Add: Negative Equity';
+        ceEl.textContent=(equity>=0?'−':'+')+fmtDollar(Math.abs(equity));
+        ceEl.style.color=equity>=0?'var(--success)':'var(--danger)';
+      } else { ceRow.style.display='none'; }
+      animateTo(document.getElementById('cashDue'), Math.max(0,total-equity), fmtDollar);
+    }
+  }
+
+  // ── Reset ─────────────────────────────────────────────────────
+  function resetAll() {
+    document.querySelectorAll('input[type="text"]').forEach(el => {
+      if (el.id.startsWith('fin')||el.id.startsWith('lease')||el.id.startsWith('comp')||el.id==='taxRate') return;
+      if (!el.closest('.info-bar')) el.value='0.00';
+    });
+    document.querySelectorAll('.info-bar input').forEach(el => el.value='');
+    licManual=false; activeDealId=null; dealLeadId=null; updateDealStatus(); recalc();
+  }
+
+  // ── Init ──────────────────────────────────────────────────────
+  setupInputFormatting();
+  moveIndicator(document.querySelector('.tab.active'), TAB_COLORS.finance);
+  initAuth();
+</script>
+</body>
+</html>
