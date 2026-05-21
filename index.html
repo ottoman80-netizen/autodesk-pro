@@ -839,8 +839,14 @@
   }
 
   // ── Read CRM URL params ───────────────────────────────────────
-  function readUrlParams() {
+  async function readUrlParams() {
     const p = new URLSearchParams(window.location.search);
+    // If a specific deal_id is passed, load it directly
+    if (p.has('deal_id')) {
+      if (p.has('lead_id')) dealLeadId = p.get('lead_id');
+      await loadDeal(p.get('deal_id'));
+      return;
+    }
     if (!p.has('lead_id')) return;
     dealLeadId = p.get('lead_id');
     const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
