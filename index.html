@@ -588,8 +588,8 @@
               <td><input type="text" id="leaseMF24"     value="0.00125" oninput="recalc()"></td>
               <td><input type="text" id="leaseRebate24" value="0"       oninput="recalc()"></td>
               <td><input type="text" id="leaseCap24"    value="2,000"   oninput="recalc()"></td>
-              <td><input type="text" id="leaseResid24"  value="62"      oninput="recalc()"></td>
-              <td id="leaseResidDollar24" class="out" style="color:#94a3b8;">—</td>
+              <td><input type="text" id="leaseResid24"  value="62"      oninput="onResidPctInput(24)"></td>
+              <td><input type="text" id="leaseResidDollar24" oninput="onResidDollarInput(24)" placeholder="auto"></td>
               <td><input type="text" id="leaseMiles24"  value="12,000"  oninput="recalc()"></td>
               <td id="leasePayment24" class="payment">—</td>
             </tr>
@@ -599,8 +599,8 @@
               <td><input type="text" id="leaseMF36"     value="0.00125" oninput="recalc()"></td>
               <td><input type="text" id="leaseRebate36" value="0"       oninput="recalc()"></td>
               <td><input type="text" id="leaseCap36"    value="2,000"   oninput="recalc()"></td>
-              <td><input type="text" id="leaseResid36"  value="55"      oninput="recalc()"></td>
-              <td id="leaseResidDollar36" class="out" style="color:#94a3b8;">—</td>
+              <td><input type="text" id="leaseResid36"  value="55"      oninput="onResidPctInput(36)"></td>
+              <td><input type="text" id="leaseResidDollar36" oninput="onResidDollarInput(36)" placeholder="auto"></td>
               <td><input type="text" id="leaseMiles36"  value="12,000"  oninput="recalc()"></td>
               <td id="leasePayment36" class="payment">—</td>
             </tr>
@@ -959,6 +959,8 @@
       mf:      parseFloat(document.getElementById('leaseMF'+t)?.value)||0,
       rebate:  parseNum('leaseRebate'+t), cap: parseNum('leaseCap'+t),
       resid:   parseNum('leaseResid'+t),  miles: parseNum('leaseMiles'+t),
+      resid_dollar:        parseNum('leaseResidDollar'+t),
+      resid_dollar_manual: document.getElementById('leaseResidDollar'+t)?.dataset.manual==='true',
       payment: parseFloat((document.getElementById('leasePayment'+t)?.textContent||'').replace(/[$,]/g,''))||0,
     }));
   }
@@ -1020,6 +1022,11 @@
       const mfEl = document.getElementById('leaseMF'+lt.term); if (mfEl) mfEl.value = lt.mf;
       set('leaseRebate'+lt.term, lt.rebate); set('leaseCap'+lt.term, fmt(lt.cap||0));
       set('leaseResid'+lt.term, lt.resid);   set('leaseMiles'+lt.term, fmt(lt.miles||0));
+      const residDollarEl=document.getElementById('leaseResidDollar'+lt.term);
+      if (residDollarEl) {
+        residDollarEl.dataset.manual = lt.resid_dollar_manual ? 'true' : 'false';
+        if (lt.resid_dollar_manual && lt.resid_dollar) residDollarEl.value = fmt(lt.resid_dollar);
+      }
     });
     licManual = true;
     activeDealId = id;
@@ -1225,6 +1232,17 @@
     return (capCost-residualDollar)/months+(capCost+residualDollar)*moneyFactor;
   }
 
+  // ── Residual $ override (manual entry beats MSRP × %) ────────
+  function onResidPctInput(t) {
+    document.getElementById('leaseResidDollar'+t).dataset.manual='false';
+    recalc();
+  }
+  function onResidDollarInput(t) {
+    const el=document.getElementById('leaseResidDollar'+t);
+    el.dataset.manual=el.value.trim()===''?'false':'true';
+    recalc();
+  }
+
   // ── Main recalc ───────────────────────────────────────────────
   function recalc() {
     const price=parseNum('price'), accessories=parseNum('accessories'), docFee=parseNum('docFee'),
@@ -1251,14 +1269,19 @@
     });
 
     // Lease
+    const msrp=parseNum('msrp');
     [24,36].forEach(t => {
       const mf=parseFloat(document.getElementById('leaseMF'+t).value)||0,
             rebate=parseNum('leaseRebate'+t), capReduction=parseNum('leaseCap'+t),
-            residPct=parseNum('leaseResid'+t), residualDollar=price*(residPct/100),
+            residPct=parseNum('leaseResid'+t),
+            residDollarEl=document.getElementById('leaseResidDollar'+t),
+            autoResid=msrp*(residPct/100),
+            isManualResid=residDollarEl.dataset.manual==='true',
+            residualDollar=isManualResid?parseNum('leaseResidDollar'+t):autoResid,
             netCap=(total-equity)-capReduction-rebate,
             payment=calcLeasePayment(Math.max(0,netCap),residualDollar,mf,t),
             equivAPR=mf*2400, totalLeaseCost=(payment*t)+capReduction;
-      document.getElementById('leaseResidDollar'+t).textContent=fmtDollar(residualDollar);
+      if (!isManualResid && document.activeElement!==residDollarEl) residDollarEl.value=fmt(autoResid);
       animateTo(document.getElementById('leasePayment'  +t), Math.max(0,payment), fmtDollar);
       animateTo(document.getElementById('leaseTotalCost'+t), totalLeaseCost,       fmtDollar);
       document.getElementById('leaseAPR'+t).textContent=fmt(equivAPR)+'%';
@@ -1280,7 +1303,7 @@
     });
     [24,36].forEach(t => {
       const mf=parseFloat(document.getElementById('leaseMF'+t).value)||0,
-            rebate=parseNum('leaseRebate'+t), res$=price*(parseNum('leaseResid'+t)/100);
+            rebate=parseNum('leaseRebate'+t), res$=parseNum('leaseResidDollar'+t);
       const pays=downs.map(d=>{ const nc=(total-equity)-d-rebate; return calcLeasePayment(Math.max(0,nc),res$,mf,t); });
       const minPay=Math.min(...pays);
       html+=`<tr><td class="row-label lease-row">Lease ${t} mo</td>`;
