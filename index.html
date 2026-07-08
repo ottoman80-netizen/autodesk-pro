@@ -388,7 +388,7 @@
       <div class="card-body">
         <div class="form-row">
           <label>MSRP</label>
-          <div class="currency" style="flex:1;position:relative;"><input type="text" id="msrp" value="24,159.00"></div>
+          <div class="currency" style="flex:1;position:relative;"><input type="text" id="msrp" value="24,159.00" oninput="recalc()"></div>
         </div>
         <div class="form-row">
           <label>Selling Price</label>
@@ -423,7 +423,7 @@
         <div class="divider"></div>
         <div class="form-row" style="margin-bottom:10px;">
           <label>Tax Rate</label>
-          <input type="text" id="taxRate" value="6.00"
+          <input type="text" id="taxRate" value="7.75"
             style="width:60px;flex:none;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;text-align:center;background:var(--input-bg);color:var(--text);transition:border-color 0.2s,box-shadow 0.2s;"
             oninput="recalc()"
             onfocus="this.style.borderColor='#1a73e8';this.style.boxShadow='0 0 0 3px rgba(26,115,232,0.15)'"
@@ -1028,7 +1028,13 @@
         if (lt.resid_dollar_manual && lt.resid_dollar) residDollarEl.value = fmt(lt.resid_dollar);
       }
     });
-    licManual = true;
+    // Keep the CA DMV auto-calc tracking Selling Price unless the saved license
+    // was an intentional manual override (matches neither the current nor the
+    // pre-2026 fee schedule for the saved selling price).
+    const savedPrice = Number(d.selling_price) || 0, savedLic = Number(d.license) || 0;
+    licManual = savedLic > 0
+      && Math.abs(savedLic - calcCALicense(savedPrice).total) > 1
+      && Math.abs(savedLic - calcLegacyLicenseTotal(savedPrice)) > 1;
     activeDealId = id;
     dealLeadId   = d.lead_id || null;
     updateDealStatus();
@@ -1099,7 +1105,8 @@
           docFee      = parseNum('docFee'),       taxRate     = parseNum('taxRate'),
           license     = parseNum('license'),      otherFees   = parseNum('otherFees'),
           tradeValue  = parseNum('tradeValue'),   tradePayoff = parseNum('tradePayoff');
-    const salesTax    = (price + accessories) * (taxRate / 100);
+    // Keep in sync with recalc(): CA taxes price + accessories + doc fee
+    const salesTax    = (price + accessories + docFee) * (taxRate / 100);
     const totalOTD    = price + accessories + docFee + salesTax + license + otherFees;
     const equity      = tradeValue - tradePayoff;
     const cashDue     = Math.max(0, totalOTD - equity);
@@ -1156,22 +1163,33 @@
 
   // ── CA DMV License ────────────────────────────────────────────
   let licManual = false;
+  // 2026 CA DMV fee schedule (dmv.ca.gov — CPI-adjusted every January)
   function calcTIF(value) {
-    if (value< 5000) return 29; if (value<25000) return 66;
-    if (value<35000) return 132; if (value<60000) return 175; return 227;
+    if (value< 5000) return 33; if (value<25000) return 66;
+    if (value<35000) return 132; if (value<60000) return 198; return 231;
   }
   function calcCALicense(price) {
-    const vlf=price*0.0065, reg=74, chp=30, tif=calcTIF(price), county=10;
+    const vlf=price*0.0065, reg=76, chp=34, tif=calcTIF(price), county=25;
     return { vlf, reg, chp, tif, county, total: vlf+reg+chp+tif+county };
   }
+  // Pre-2026 schedule — only used to recognize auto-calculated values in old saved deals
+  function calcLegacyLicenseTotal(price) {
+    const tif = price<5000 ? 29 : price<25000 ? 66 : price<35000 ? 132 : price<60000 ? 175 : 227;
+    return price*0.0065 + 74 + 30 + tif + 10;
+  }
   function updateLicenseField(price) {
-    if (licManual) return;
-    const f=calcCALicense(price), el=document.getElementById('license'), btn=document.getElementById('licAutoBtn');
+    const el=document.getElementById('license'), btn=document.getElementById('licAutoBtn'), bd=document.getElementById('licBreakdown');
+    if (licManual) {
+      if (btn) { btn.style.background='#fef7e0'; btn.style.color='#b06000'; }
+      if (bd) bd.innerHTML='<div style="color:#b06000;font-weight:600;">Manual override — not tracking Selling Price. Click ↻ Auto to re-enable CA DMV auto-calc.</div>';
+      return;
+    }
+    const f=calcCALicense(price);
     if (el) el.value=fmt(f.total);
     if (btn) { btn.style.background='#e8f0fe'; btn.style.color='var(--accent)'; }
-    const bd=document.getElementById('licBreakdown'); if (!bd) return;
+    if (!bd) return;
     const row=(label,val,note)=>`<div style="display:flex;justify-content:space-between;color:#3c4043;"><span style="color:#5f6368;">${label}${note?`<span style="font-size:10px;color:#9aa0a6;margin-left:4px;">${note}</span>`:''}</span><span style="font-weight:600;color:#202124;">${fmtDollar(val)}</span></div>`;
-    bd.innerHTML=row('VLF',f.vlf,'0.65% of price')+row('Registration',f.reg,'flat')+row('CHP Fee',f.chp,'flat')+row('TIF',f.tif,'tiered by value')+row('County Fee',f.county,'avg')+`<div style="display:flex;justify-content:space-between;border-top:1px solid #c5d8fd;margin-top:4px;padding-top:4px;"><span style="font-weight:700;color:#1a73e8;font-size:11px;text-transform:uppercase;letter-spacing:0.4px;">CA DMV Total</span><span style="font-weight:700;color:#1a73e8;">${fmtDollar(f.total)}</span></div>`;
+    bd.innerHTML=row('VLF',f.vlf,'0.65% of selling price')+row('Registration',f.reg,'flat')+row('CHP Fee',f.chp,'flat')+row('TIF',f.tif,'tiered by price')+row('County Fee',f.county,'varies by county')+`<div style="display:flex;justify-content:space-between;border-top:1px solid #c5d8fd;margin-top:4px;padding-top:4px;"><span style="font-weight:700;color:#1a73e8;font-size:11px;text-transform:uppercase;letter-spacing:0.4px;">CA DMV Total</span><span style="font-weight:700;color:#1a73e8;">${fmtDollar(f.total)}</span></div><div style="font-size:10px;color:#9aa0a6;margin-top:4px;">Excludes smog abatement (gas) / $121 EV road fee</div>`;
   }
 
   // ── Helpers ───────────────────────────────────────────────────
@@ -1246,11 +1264,13 @@
   // ── Main recalc ───────────────────────────────────────────────
   function recalc() {
     const price=parseNum('price'), accessories=parseNum('accessories'), docFee=parseNum('docFee'),
-          license=parseNum('license'), otherFees=parseNum('otherFees'), taxRate=parseNum('taxRate'),
+          otherFees=parseNum('otherFees'), taxRate=parseNum('taxRate'),
           tradeValue=parseNum('tradeValue'), tradePayoff=parseNum('tradePayoff');
     updateLicenseField(price);
-    const subtotal=price+accessories, salesTax=subtotal*(taxRate/100),
-          total=subtotal+docFee+salesTax+license+otherFees, equity=tradeValue-tradePayoff;
+    const license=parseNum('license');  // read AFTER auto-calc so totals never lag a keystroke
+    // Keep in sync with window.onbeforeprint: CA taxes price + accessories + doc fee
+    const taxable=price+accessories+docFee, salesTax=taxable*(taxRate/100),
+          total=taxable+salesTax+license+otherFees, equity=tradeValue-tradePayoff;
     animateTo(document.getElementById('salesTaxDisplay'), salesTax, fmtDollar);
     animateTo(document.getElementById('totalDisplay'),    total,    fmtDollar);
     const eqEl=document.getElementById('equityDisplay');
