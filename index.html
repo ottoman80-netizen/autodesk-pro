@@ -290,6 +290,7 @@
       .ltv-progress { display: none; }
       .row-disabled { display: none !important; }
       .row-check { display: none !important; }
+      .dealer-only { display: none !important; }  /* invoice cost + LTV: dealer-facing, never on printed offers */
 
       /* Shrink table content to fit one page width */
       .calc-table { font-size: 11px; table-layout: fixed; width: 100%; }
@@ -444,6 +445,14 @@
         <div class="summary-row" id="equityRow">
           <span>Trade Equity</span><span id="equityDisplay">$0.00</span>
         </div>
+        <div class="divider dealer-only"></div>
+        <div class="form-row dealer-only" style="margin-bottom:4px;">
+          <label>🔒 Invoice</label>
+          <div class="currency" style="flex:1;position:relative;">
+            <input type="text" id="invoiceCost" value="" placeholder="Dealer cost" oninput="recalc()" style="background:#f8f9fa;border-style:dashed;">
+          </div>
+        </div>
+        <div class="dealer-only" style="font-size:11px;color:#9aa0a6;line-height:1.5;">Dealer only — drives LTV. Never printed or shown on offers.</div>
       </div>
     </div>
   </div>
@@ -570,10 +579,10 @@
             </tr>
           </tbody>
         </table>
-        <div class="ltv-bar">
-          <div class="ltv-item"><div class="ltv-label">LTV 48mo</div><div class="ltv-value" id="ltv48">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="ltvFill48" style="width:0%"></div></div></div>
-          <div class="ltv-item"><div class="ltv-label">LTV 60mo</div><div class="ltv-value" id="ltv60">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="ltvFill60" style="width:0%"></div></div></div>
-          <div class="ltv-item"><div class="ltv-label">LTV 72mo</div><div class="ltv-value" id="ltv72">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="ltvFill72" style="width:0%"></div></div></div>
+        <div class="ltv-bar dealer-only">
+          <div class="ltv-item"><div class="ltv-label">LTV 48mo (invoice)</div><div class="ltv-value" id="ltv48">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="ltvFill48" style="width:0%"></div></div></div>
+          <div class="ltv-item"><div class="ltv-label">LTV 60mo (invoice)</div><div class="ltv-value" id="ltv60">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="ltvFill60" style="width:0%"></div></div></div>
+          <div class="ltv-item"><div class="ltv-label">LTV 72mo (invoice)</div><div class="ltv-value" id="ltv72">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="ltvFill72" style="width:0%"></div></div></div>
         </div>
       </div>
 
@@ -907,6 +916,7 @@
       dealer_name:   document.getElementById('dealerName').value.trim()   || null,
       msrp:          parseNum('msrp'),
       selling_price: parseNum('price'),
+      invoice_cost:  parseNum('invoiceCost') || null,
       accessories:   parseNum('accessories'),
       doc_fee:       parseNum('docFee'),
       tax_rate:      parseNum('taxRate'),
@@ -1015,6 +1025,7 @@
     set('docFee', fmt(d.doc_fee||0));     set('taxRate', d.tax_rate||'0');
     set('license', fmt(d.license||0));    set('otherFees', fmt(d.other_fees||0));
     set('tradeValue', fmt(d.trade_value||0)); set('tradePayoff', fmt(d.trade_payoff||0));
+    set('invoiceCost', d.invoice_cost ? fmt(Number(d.invoice_cost)) : '');  // blank = not entered, LTV shows —
     if (Array.isArray(d.finance_terms)) d.finance_terms.forEach(ft => {
       set('finRate'+ft.term, ft.rate); set('finRebate'+ft.term, ft.rebate); set('finDown'+ft.term, fmt(ft.down||0));
     });
@@ -1224,12 +1235,23 @@
       el.addEventListener('focus',function(){ const raw=parseFloat(this.value.replace(/,/g,'')); this.value=isNaN(raw)?'':(raw===0?'':String(raw)); this.select(); });
       el.addEventListener('blur', function(){ const raw=parseFloat(this.value.replace(/,/g,'')); this.value=isNaN(raw)?'0.00':fmt(raw); recalc(); });
     });
+    // Invoice cost: blank means "not entered" (LTV shows —), so never coerce to 0.00
+    const inv=document.getElementById('invoiceCost');
+    if (inv) {
+      inv.addEventListener('focus',function(){ const raw=parseFloat(this.value.replace(/,/g,'')); this.value=isNaN(raw)||raw===0?'':String(raw); this.select(); });
+      inv.addEventListener('blur', function(){ const raw=parseFloat(this.value.replace(/,/g,'')); this.value=isNaN(raw)||raw===0?'':fmt(raw); recalc(); });
+    }
   }
 
   // ── LTV helper ────────────────────────────────────────────────
   function setLTV(valueId, fillId, pct) {
     const ltvEl=document.getElementById(valueId), fillEl=document.getElementById(fillId);
     if (!ltvEl) return;
+    if (pct==null) {  // no invoice cost entered — LTV not computable
+      ltvEl.textContent='—'; ltvEl.className='ltv-value';
+      if (fillEl) { fillEl.style.width='0%'; fillEl.className='ltv-progress-fill'; }
+      return;
+    }
     ltvEl.textContent=fmt(pct)+'%';
     const zone=pct>120?'over':pct>100?'warning':'ok';
     ltvEl.className='ltv-value '+zone;
@@ -1278,10 +1300,11 @@
     document.getElementById('equityRow').className='summary-row '+(equity>=0?'equity-positive':'equity-negative');
 
     // Finance
+    const invoice=parseNum('invoiceCost');  // dealer cost — banks book LTV off invoice, not MSRP/selling price
     [48,60,72].forEach(t => {
       const rate=parseNum('finRate'+t), rebate=parseNum('finRebate'+t), down=parseNum('finDown'+t);
       const af=total-down-equity-rebate, payment=calcLoanPayment(Math.max(0,af),rate,t),
-            totalCost=payment*t, ltv=price>0?(af/price*100):0;
+            totalCost=payment*t, ltv=invoice>0?(af/invoice*100):null;
       animateTo(document.getElementById('finAmount' +t), Math.max(0,af), fmtDollar);
       animateTo(document.getElementById('finPayment'+t), payment,        fmtDollar);
       animateTo(document.getElementById('finTotal'  +t), totalCost,      fmtDollar);
@@ -1357,6 +1380,7 @@
   function resetAll() {
     document.querySelectorAll('input[type="text"]').forEach(el => {
       if (el.id.startsWith('fin')||el.id.startsWith('lease')||el.id.startsWith('comp')||el.id==='taxRate') return;
+      if (el.id==='invoiceCost') { el.value=''; return; }
       if (!el.closest('.info-bar')) el.value='0.00';
     });
     document.querySelectorAll('.info-bar input').forEach(el => el.value='');
