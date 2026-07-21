@@ -951,6 +951,11 @@
       if (dealLeadId && window.opener) {
         window.opener.postMessage({ type: 'fd_deal_saved', lead_id: dealLeadId }, '*');
       }
+      // When embedded in a frame (CRM pop-up), the opener channel doesn't exist —
+      // notify the surrounding page instead so its Finance Deals card refreshes.
+      if (dealLeadId && window.parent !== window) {
+        window.parent.postMessage({ type: 'fd_deal_saved', lead_id: dealLeadId }, '*');
+      }
     }
   }
 
