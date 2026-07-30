@@ -395,6 +395,11 @@
           <label>Selling Price</label>
           <div class="currency" style="flex:1;position:relative;"><input type="text" id="price" value="23,995.00" oninput="recalc()"></div>
         </div>
+        <!-- Discount readout: derived from MSRP - selling price, never an input -->
+        <div class="form-row" id="discountRow" style="display:none;margin-top:-6px;">
+          <label></label>
+          <div style="flex:1;font-size:12px;font-weight:600;color:#1e8e3e;" id="discountDisplay"></div>
+        </div>
         <div class="form-row">
           <label>Accessories</label>
           <div class="currency" style="flex:1;position:relative;"><input type="text" id="accessories" value="0.00" oninput="recalc()"></div>
@@ -486,6 +491,8 @@
       <div class="pp-grid">
         <div>
           <div class="pp-col-label">Vehicle &amp; Fees</div>
+          <div class="pp-row" id="pp-row-msrp"><span class="pp-lbl">MSRP</span><span class="pp-val" id="pp-msrp">—</span></div>
+          <div class="pp-row" id="pp-row-disc"><span class="pp-lbl">Discount</span><span class="pp-val" id="pp-disc" style="color:#1e8e3e;">—</span></div>
           <div class="pp-row"><span class="pp-lbl">Selling Price</span><span class="pp-val" id="pp-price">—</span></div>
           <div class="pp-row"><span class="pp-lbl">Accessories</span><span class="pp-val" id="pp-acc">—</span></div>
           <div class="pp-row"><span class="pp-lbl">Doc Fee</span><span class="pp-val" id="pp-doc">—</span></div>
@@ -1117,6 +1124,7 @@
     document.getElementById('printTabLabel').textContent = (activeTab ? activeTab.textContent.trim() : '') + ' Summary';
 
     // Pricing section
+    const msrp        = parseNum('msrp');
     const price       = parseNum('price'),       accessories = parseNum('accessories'),
           docFee      = parseNum('docFee'),       taxRate     = parseNum('taxRate'),
           license     = parseNum('license'),      otherFees   = parseNum('otherFees'),
@@ -1126,6 +1134,14 @@
     const totalOTD    = price + accessories + docFee + salesTax + license + otherFees;
     const equity      = tradeValue - tradePayoff;
     const cashDue     = Math.max(0, totalOTD - equity);
+
+    // MSRP + discount are presentation only — every total above is driven off
+    // the selling price, exactly as recalc() does it.
+    const discount = msrp - price;
+    document.getElementById('pp-row-msrp').style.display = msrp > 0 ? '' : 'none';
+    document.getElementById('pp-row-disc').style.display = (msrp > 0 && discount > 0) ? '' : 'none';
+    document.getElementById('pp-msrp').textContent    = fmtDollar(msrp);
+    document.getElementById('pp-disc').textContent    = '-' + fmtDollar(discount);
 
     document.getElementById('pp-price').textContent  = fmtDollar(price);
     document.getElementById('pp-acc').textContent    = fmtDollar(accessories);
@@ -1298,6 +1314,13 @@
     // Keep in sync with window.onbeforeprint: CA taxes price + accessories + doc fee
     const taxable=price+accessories+docFee, salesTax=taxable*(taxRate/100),
           total=taxable+salesTax+license+otherFees, equity=tradeValue-tradePayoff;
+    // Discount readout only — totals below stay driven by the selling price.
+    // Named msrpVal because the Lease block further down declares its own `msrp`.
+    const msrpVal=parseNum('msrp'), discount=msrpVal-price;
+    const showDiscount=msrpVal>0&&discount>0;
+    document.getElementById('discountRow').style.display=showDiscount?'':'none';
+    if(showDiscount) document.getElementById('discountDisplay').textContent=fmtDollar(discount)+' off MSRP '+fmtDollar(msrpVal);
+
     animateTo(document.getElementById('salesTaxDisplay'), salesTax, fmtDollar);
     animateTo(document.getElementById('totalDisplay'),    total,    fmtDollar);
     const eqEl=document.getElementById('equityDisplay');
