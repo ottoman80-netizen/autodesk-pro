@@ -389,11 +389,11 @@
       <div class="card-body">
         <div class="form-row">
           <label>MSRP</label>
-          <div class="currency" style="flex:1;position:relative;"><input type="text" id="msrp" value="24,159.00" oninput="recalc()"></div>
+          <div class="currency" style="flex:1;position:relative;"><input type="text" id="msrp" value="0.00" oninput="recalc()"></div>
         </div>
         <div class="form-row">
           <label>Selling Price</label>
-          <div class="currency" style="flex:1;position:relative;"><input type="text" id="price" value="23,995.00" oninput="recalc()"></div>
+          <div class="currency" style="flex:1;position:relative;"><input type="text" id="price" value="0.00" oninput="recalc()"></div>
         </div>
         <!-- Discount readout: derived from MSRP - selling price, never an input -->
         <div class="form-row" id="discountRow" style="display:none;margin-top:-6px;">
@@ -1262,6 +1262,32 @@
       inv.addEventListener('focus',function(){ const raw=parseFloat(this.value.replace(/,/g,'')); this.value=isNaN(raw)||raw===0?'':String(raw); this.select(); });
       inv.addEventListener('blur', function(){ const raw=parseFloat(this.value.replace(/,/g,'')); this.value=isNaN(raw)||raw===0?'':fmt(raw); recalc(); });
     }
+
+    // Every text box: typing replaces the old value in one go. The focus
+    // handlers above already select the text, but a mouse click fires
+    // mouseup right after focus and collapses that selection to a caret —
+    // that is why click-then-type was deleting one digit at a time. Swallow
+    // the first mouseup after a click-focus so the selection survives.
+    const formatted=new Set([...ids,'invoiceCost']);
+    document.querySelectorAll('input[type="text"]').forEach(el => {
+      if (!formatted.has(el.id)) el.addEventListener('focus', function(){ this.select(); });
+      el.addEventListener('mousedown', function(){ this._selectOnClick = document.activeElement !== this; });
+      el.addEventListener('mouseup', function(e){ if (this._selectOnClick) { e.preventDefault(); this._selectOnClick=false; } });
+    });
+
+    // Enter moves to the next box, the same as Tab. Boxes that already do
+    // something on Enter (deal-number load, deal search) keep their behavior.
+    document.addEventListener('keydown', function(e){
+      if (e.key!=='Enter' || e.isComposing) return;
+      const t=e.target;
+      if (!(t instanceof HTMLInputElement) || t.type!=='text' || t.hasAttribute('onkeydown')) return;
+      e.preventDefault();
+      const fields=[...document.querySelectorAll('input[type="text"],select,textarea')]
+        .filter(f => !f.disabled && !f.readOnly && f.offsetParent!==null);
+      const next=fields[fields.indexOf(t)+1];
+      if (next) { next.focus(); if (typeof next.select==='function') next.select(); }
+      else t.blur();
+    });
   }
 
   // ── LTV helper ────────────────────────────────────────────────
