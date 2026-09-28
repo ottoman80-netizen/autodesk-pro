@@ -734,6 +734,12 @@
   let currentRole  = null;
   let activeDealId = null;
   let dealLeadId   = null; // CRM lead this deal is linked to
+  // The customer the CRM opened this page for, captured once at load. The
+  // address bar is the one place it can't be wiped, so new deals fall back
+  // to it on save instead of saving unlinked.
+  const crmParams   = new URLSearchParams(window.location.search);
+  const crmLeadId   = crmParams.get('lead_id');
+  const crmCustomer = crmParams.get('customer');
 
   // ── Screen helpers ────────────────────────────────────────────
   function showScreen(id) {
@@ -911,6 +917,19 @@
   // ── Save deal ─────────────────────────────────────────────────
   async function saveDeal() {
     if (!currentUser) return showToast('Please sign in first', 'error');
+    // A new deal opened from a customer's profile always belongs to that customer.
+    if (!dealLeadId && !activeDealId && crmLeadId) {
+      dealLeadId = crmLeadId;
+      const nameEl = document.getElementById('customerName');
+      if (!nameEl.value.trim() && crmCustomer) nameEl.value = crmCustomer;
+    }
+    // Opened from the CRM but still not attached to anyone: it won't show on
+    // any profile, so check before saving.
+    const fromCrm = window.parent !== window || !!window.opener;
+    if (!dealLeadId && fromCrm &&
+        !confirm("This deal isn't attached to a customer, so it won't show on anyone's profile in the CRM.\n\nSave it anyway?")) {
+      return;
+    }
     const btn = document.getElementById('saveDealBtn');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Saving…'; }
     const deal = {
@@ -1437,8 +1456,9 @@
       if (el.id==='invoiceCost') { el.value=''; return; }
       if (!el.closest('.info-bar')) el.value='0.00';
     });
-    document.querySelectorAll('.info-bar input').forEach(el => el.value='');
-    licManual=false; activeDealId=null; dealLeadId=null; updateDealStatus(); recalc();
+    // Keep the customer: clear the numbers and car, not who the deal is for.
+    document.querySelectorAll('.info-bar input').forEach(el => { if (el.id!=='customerName') el.value=''; });
+    licManual=false; activeDealId=null; updateDealStatus(); recalc();
   }
 
   // ── Init ──────────────────────────────────────────────────────
