@@ -734,6 +734,7 @@
   let currentRole  = null;
   let activeDealId = null;
   let dealLeadId   = null; // CRM lead this deal is linked to
+  let setupForUserId = null; // who the app was set up for; see onSignIn
   // The customer the CRM opened this page for, captured once at load. The
   // address bar is the one place it can't be wiped, so new deals fall back
   // to it on save instead of saving unlinked.
@@ -787,11 +788,17 @@
     }
     sb.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN')  await onSignIn(session.user);
-      if (event === 'SIGNED_OUT') { currentUser = null; currentRole = null; activeDealId = null; showScreen('loginScreen'); }
+      if (event === 'SIGNED_OUT') { currentUser = null; currentRole = null; activeDealId = null; setupForUserId = null; showScreen('loginScreen'); }
     });
   }
 
   async function onSignIn(user) {
+    // Supabase re-announces SIGNED_IN on its own (switching back to the tab,
+    // a token refresh). Setting up again would forget the deal being edited —
+    // the next Save then inserted a duplicate — and, from Rework, reload the
+    // saved deal over unsaved changes. Set up once per signed-in person.
+    if (setupForUserId === user.id) { currentUser = user; return; }
+    setupForUserId = user.id;
     currentUser = user;
     let { data: profile } = await sb.from('fd_user_profiles').select('*').eq('id', user.id).maybeSingle();
     if (!profile) {
@@ -809,6 +816,9 @@
       setupMainApp(profile);
       showScreen('mainApp');
     } else {
+      // Not in yet (pending approval, or the profile didn't load): let the
+      // next SIGNED_IN check again, as before.
+      setupForUserId = null;
       showScreen('pendingScreen');
     }
   }
