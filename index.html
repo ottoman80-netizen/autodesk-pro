@@ -419,6 +419,13 @@
               <button id="licAutoBtn" onclick="licManual=false;recalc()" title="Reset to CA DMV auto-calculation"
                 style="padding:6px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--accent);cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0;">↻ Auto</button>
             </div>
+            <div style="display:flex;gap:6px;align-items:center;margin-top:7px;font-size:12px;color:#5f6368;">
+              <span>Fuel</span>
+              <select id="fuelType" onchange="recalc()" title="EVs don't pay the $20 smog abatement fee"
+                style="padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text);">
+                <option value="gas">Gas</option><option value="hybrid">Hybrid</option><option value="ev">Electric</option>
+              </select>
+            </div>
             <div id="licBreakdown" style="margin-top:7px;background:#f0f6ff;border:1px solid #c5d8fd;border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;line-height:1.8;"></div>
           </div>
         </div>
@@ -1081,12 +1088,15 @@
       }
     });
     // Keep the CA DMV auto-calc tracking Selling Price unless the saved license
-    // was an intentional manual override (matches neither the current nor the
-    // pre-2026 fee schedule for the saved selling price).
+    // was an intentional manual override (matches no current or older formula).
+    // Fuel type isn't stored, so recover it from which formula the saved value matches.
     const savedPrice = Number(d.selling_price) || 0, savedLic = Number(d.license) || 0;
-    licManual = savedLic > 0
-      && Math.abs(savedLic - calcCALicense(savedPrice).total) > 1
-      && Math.abs(savedLic - calcLegacyLicenseTotal(savedPrice)) > 1;
+    const savedValue = savedPrice + (Number(d.accessories) || 0);
+    const near = x => Math.abs(savedLic - x) <= 1;
+    const fuelEl = document.getElementById('fuelType');
+    const fuelMatch = ['gas','ev'].find(fu => [2026,2027].some(yr => near(calcCALicense(savedValue, fu, yr).total)));
+    if (fuelEl) fuelEl.value = fuelMatch || 'gas';
+    licManual = savedLic > 0 && !fuelMatch && !calcLegacyLicenseTotals(savedPrice).some(near);
     activeDealId = id;
     dealLeadId   = d.lead_id || null;
     updateDealStatus();
@@ -1224,20 +1234,38 @@
 
   // ── CA DMV License ────────────────────────────────────────────
   let licManual = false;
-  // 2026 CA DMV fee schedule (dmv.ca.gov — CPI-adjusted every January)
-  function calcTIF(value) {
-    if (value< 5000) return 33; if (value<25000) return 66;
-    if (value<35000) return 132; if (value<60000) return 198; return 231;
+  // CA new-car fee schedule (dmv.ca.gov/portal/vehicle-registration/registration-fees/).
+  // CPI-adjusted every January — 2027 values from DMV memo VIN 2026-07 (dmv.ca.gov/portal/file/26vin07-pdf/).
+  // Checked 2026-11-19 against DMV's online fee calculator: $40k new gas car, Orange or LA County = $601.
+  const DMV_FEES = {
+    2026: { reg:76, chp:34, tif:[33,66,132,198,231] },
+    2027: { reg:79, chp:35, tif:[35,69,138,208,242] },  // reg = $76 base + $3 alt-fuel fee (inferred from memo)
+  };
+  const SMOG_ABATEMENT = 20;   // gas & hybrid, first 8 model years; EVs exempt
+  const COUNTY_DISTRICT = 13;  // DMV calculator total for Orange & Los Angeles counties (AQMD, SAFE, theft, etc.)
+  const TIRE_FEE = 1.75, TIRES = 4;  // CA Tire Fee per new tire (CDTFA), dealer collects
+  const EFILE_FEE = 33;        // dealer electronic filing fee — DMV regulatory max
+  function feeYear() { return new Date().getFullYear() >= 2027 ? 2027 : 2026; }
+  function calcTIF(value, yr = feeYear()) {
+    const t = DMV_FEES[yr].tif;
+    return value<5000 ? t[0] : value<25000 ? t[1] : value<35000 ? t[2] : value<60000 ? t[3] : t[4];
   }
-  function calcCALicense(price) {
-    const vlf=price*0.0065, reg=76, chp=34, tif=calcTIF(price), county=25;
-    return { vlf, reg, chp, tif, county, total: vlf+reg+chp+tif+county };
+  // value = selling price + accessories (DMV's VLF base: no tax, doc fee, trade or rebate deductions)
+  function calcCALicense(value, fuel = 'gas', yr = feeYear()) {
+    const s = DMV_FEES[yr], v = Math.round(value);
+    const vlf = v*0.0065, tif = calcTIF(v, yr), smog = fuel==='ev' ? 0 : SMOG_ABATEMENT;
+    const dmv = vlf + s.reg + s.chp + tif + smog + COUNTY_DISTRICT, tire = TIRE_FEE*TIRES;
+    return { vlf, reg:s.reg, chp:s.chp, tif, smog, county:COUNTY_DISTRICT, dmv, tire, efile:EFILE_FEE, yr,
+             total: dmv + tire + EFILE_FEE };
   }
-  // Pre-2026 schedule — only used to recognize auto-calculated values in old saved deals
-  function calcLegacyLicenseTotal(price) {
-    const tif = price<5000 ? 29 : price<25000 ? 66 : price<35000 ? 132 : price<60000 ? 175 : 227;
-    return price*0.0065 + 74 + 30 + tif + 10;
+  // Older formulas — only used to recognize auto-calculated values in old saved deals
+  function calcLegacyLicenseTotals(price) {
+    const tifOld = price<5000 ? 29 : price<25000 ? 66 : price<35000 ? 132 : price<60000 ? 175 : 227;
+    const tif26  = calcTIF(price, 2026);
+    return [ price*0.0065 + 74 + 30 + tifOld + 10,     // pre-2026
+             price*0.0065 + 76 + 34 + tif26 + 25 ];    // 2026, before Nov 2026 fee update
   }
+  function currentFuel() { const el=document.getElementById('fuelType'); return el ? el.value : 'gas'; }
   function updateLicenseField(price) {
     const el=document.getElementById('license'), btn=document.getElementById('licAutoBtn'), bd=document.getElementById('licBreakdown');
     if (licManual) {
@@ -1245,12 +1273,18 @@
       if (bd) bd.innerHTML='<div style="color:#b06000;font-weight:600;">Manual override — not tracking Selling Price. Click ↻ Auto to re-enable CA DMV auto-calc.</div>';
       return;
     }
-    const f=calcCALicense(price);
+    const f=calcCALicense(price, currentFuel());
     if (el) el.value=fmt(f.total);
     if (btn) { btn.style.background='#e8f0fe'; btn.style.color='var(--accent)'; }
     if (!bd) return;
     const row=(label,val,note)=>`<div style="display:flex;justify-content:space-between;color:#3c4043;"><span style="color:#5f6368;">${label}${note?`<span style="font-size:10px;color:#9aa0a6;margin-left:4px;">${note}</span>`:''}</span><span style="font-weight:600;color:#202124;">${fmtDollar(val)}</span></div>`;
-    bd.innerHTML=row('VLF',f.vlf,'0.65% of selling price')+row('Registration',f.reg,'flat')+row('CHP Fee',f.chp,'flat')+row('TIF',f.tif,'tiered by price')+row('County Fee',f.county,'varies by county')+`<div style="display:flex;justify-content:space-between;border-top:1px solid #c5d8fd;margin-top:4px;padding-top:4px;"><span style="font-weight:700;color:#1a73e8;font-size:11px;text-transform:uppercase;letter-spacing:0.4px;">CA DMV Total</span><span style="font-weight:700;color:#1a73e8;">${fmtDollar(f.total)}</span></div><div style="font-size:10px;color:#9aa0a6;margin-top:4px;">Excludes smog abatement (gas) / $121 EV road fee</div>`;
+    const sub=(label,val)=>`<div style="display:flex;justify-content:space-between;border-top:1px solid #c5d8fd;margin-top:4px;padding-top:4px;"><span style="font-weight:700;color:#1a73e8;font-size:11px;text-transform:uppercase;letter-spacing:0.4px;">${label}</span><span style="font-weight:700;color:#1a73e8;">${fmtDollar(val)}</span></div>`;
+    bd.innerHTML=row('VLF',f.vlf,'0.65% of price + accessories')+row('Registration',f.reg,'flat')+row('CHP Fee',f.chp,'flat')+row('TIF',f.tif,'tiered by price')
+      +(f.smog?row('Smog Abatement',f.smog,'gas/hybrid'):'')+row('County/District',f.county,'OC & LA')
+      +sub('DMV Fees ('+f.yr+')',f.dmv)
+      +row('CA Tire Fee',f.tire,TIRES+' × $'+TIRE_FEE.toFixed(2))+row('Electronic Filing',f.efile,'dealer, max')
+      +sub('Total License &amp; Fees',f.total)
+      +`<div style="font-size:10px;color:#9aa0a6;margin-top:4px;">New car. EVs pay no smog fee; $${f.yr>=2027?127:121} EV road fee starts at first renewal.</div>`;
   }
 
   // ── Helpers ───────────────────────────────────────────────────
@@ -1364,7 +1398,7 @@
     const price=parseNum('price'), accessories=parseNum('accessories'), docFee=parseNum('docFee'),
           otherFees=parseNum('otherFees'), taxRate=parseNum('taxRate'),
           tradeValue=parseNum('tradeValue'), tradePayoff=parseNum('tradePayoff');
-    updateLicenseField(price);
+    updateLicenseField(price+accessories);  // DMV's VLF/TIF value includes dealer-added accessories
     const license=parseNum('license');  // read AFTER auto-calc so totals never lag a keystroke
     // Keep in sync with window.onbeforeprint: CA taxes price + accessories + doc fee
     const taxable=price+accessories+docFee, salesTax=taxable*(taxRate/100),
@@ -1468,7 +1502,9 @@
     });
     // Keep the customer: clear the numbers and car, not who the deal is for.
     document.querySelectorAll('.info-bar input').forEach(el => { if (el.id!=='customerName') el.value=''; });
-    licManual=false; activeDealId=null; updateDealStatus(); recalc();
+    licManual=false; activeDealId=null;
+    const fuelEl=document.getElementById('fuelType'); if (fuelEl) fuelEl.value='gas';
+    updateDealStatus(); recalc();
   }
 
   // ── Init ──────────────────────────────────────────────────────
