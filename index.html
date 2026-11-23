@@ -4,28 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AutoDesk Pro — Finance Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     :root {
-      --primary:       #202124;
-      --primary-light: #3c4043;
-      --accent:        #1a73e8;
-      --accent-hover:  #1557b0;
-      --indigo:        #4285f4;
-      --violet:        #1a73e8;
-      --emerald:       #1e8e3e;
-      --success:       #1e8e3e;
-      --warning:       #e37400;
-      --danger:        #c5221f;
-      --bg:            #f8f9fa;
+      --primary:       #0f172a;
+      --primary-light: #334155;
+      --accent:        #2563eb;
+      --accent-hover:  #1d4ed8;
+      --indigo:        #3b82f6;
+      --violet:        #2563eb;
+      --emerald:       #15803d;
+      --success:       #15803d;
+      --warning:       #b45309;
+      --danger:        #b91c1c;
+      --bg:            #f1f5f9;
       --card:          #ffffff;
-      --text:          #202124;
-      --text-muted:    #5f6368;
-      --border:        #dadce0;
-      --input-bg:      #f8f9fa;
-      --shadow:        0 1px 2px rgba(60,64,67,0.10), 0 1px 3px rgba(60,64,67,0.08);
-      --shadow-md:     0 2px 6px rgba(60,64,67,0.14), 0 1px 3px rgba(60,64,67,0.10);
-      --shadow-lg:     0 8px 24px rgba(60,64,67,0.18), 0 3px 8px rgba(60,64,67,0.10);
+      --text:          #0f172a;
+      --text-muted:    #475569;
+      --border:        #e2e8f0;
+      --input-bg:      #ffffff;
+      --border-strong: #cbd5e1;
+      --chrome:        #1e293b;
+      --shadow:        0 1px 2px rgba(15,23,42,0.10), 0 1px 3px rgba(15,23,42,0.08);
+      --shadow-md:     0 2px 6px rgba(15,23,42,0.14), 0 1px 3px rgba(15,23,42,0.10);
+      --shadow-lg:     0 8px 24px rgba(15,23,42,0.18), 0 3px 8px rgba(15,23,42,0.10);
       --radius:        10px;
       --radius-sm:     6px;
     }
@@ -44,15 +48,15 @@
     .auth-field { margin-bottom: 16px; }
     .auth-field label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px; }
     .auth-field input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--input-bg); color: var(--text); transition: border-color 0.2s, box-shadow 0.2s; }
-    .auth-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); background: white; }
+    .auth-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); background: white; }
     .auth-btn { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s, box-shadow 0.2s; margin-top: 8px; }
-    .auth-btn:hover { background: var(--accent-hover); box-shadow: 0 4px 12px rgba(26,115,232,0.3); }
-    .auth-btn:disabled { background: #9aa0a6; cursor: not-allowed; }
+    .auth-btn:hover { background: var(--accent-hover); box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+    .auth-btn:disabled { background: #64748b; cursor: not-allowed; }
     .auth-note { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 14px; line-height: 1.6; }
 
     /* ── Header ── */
-    .header { background: #ffffff; color: var(--text); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 0 var(--border), 0 2px 6px rgba(60,64,67,0.08); position: sticky; top: 0; z-index: 100; overflow: visible; gap: 12px; }
-    .header::after { content: ''; position: absolute; bottom: 0; left: -60%; right: 0; height: 2px; width: 220%; background: linear-gradient(90deg, transparent 0%, #1a73e8 50%, transparent 100%); animation: shimmer 4s ease-in-out infinite; }
+    .header { background: #ffffff; color: var(--text); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 0 var(--border), 0 2px 6px rgba(15,23,42,0.08); position: sticky; top: 0; z-index: 100; overflow: visible; gap: 12px; }
+    .header::after { content: ''; position: absolute; bottom: 0; left: -60%; right: 0; height: 2px; width: 220%; background: linear-gradient(90deg, transparent 0%, #2563eb 50%, transparent 100%); animation: shimmer 4s ease-in-out infinite; }
     @keyframes shimmer { 0% { transform: translateX(-40%); } 100% { transform: translateX(40%); } }
     .header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); white-space: nowrap; flex-shrink: 0; }
     .header h1 span { color: var(--accent); }
@@ -61,25 +65,25 @@
     .header-search { position: relative; display: flex; align-items: center; flex: 1; max-width: 420px; }
     .header-search-icon { position: absolute; left: 12px; font-size: 13px; pointer-events: none; color: var(--text-muted); }
     .header-search-input { width: 100%; padding: 8px 14px 8px 34px; border: 1px solid var(--border); border-radius: 24px; font-size: 13px; background: var(--input-bg); color: var(--text); transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; }
-    .header-search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); background: white; }
-    .header-search-input::placeholder { color: #9aa0a6; }
+    .header-search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); background: white; }
+    .header-search-input::placeholder { color: #64748b; }
 
     /* ── User menu ── */
     .header-right-group { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    .header-date-small { font-size: 11px; color: #9aa0a6; white-space: nowrap; }
-    .admin-pill { padding: 5px 14px; background: #e8f0fe; color: var(--accent); border: none; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
-    .admin-pill:hover { background: #d2e3fc; }
+    .header-date-small { font-size: 11px; color: #64748b; white-space: nowrap; }
+    .admin-pill { padding: 5px 14px; background: #eff6ff; color: var(--accent); border: none; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
+    .admin-pill:hover { background: #dbeafe; }
     .user-menu-wrap { position: relative; }
     .user-menu-btn { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 8px; border-radius: 24px; transition: background 0.2s; border: none; background: none; }
-    .user-menu-btn:hover { background: #f1f3f4; }
+    .user-menu-btn:hover { background: #f1f5f9; }
     .user-avatar-circle { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
     .user-menu-name { font-size: 13px; font-weight: 500; color: var(--text); }
     .user-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: white; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 6px; min-width: 200px; z-index: 300; }
     .user-dropdown-email { padding: 8px 12px; font-size: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border); margin-bottom: 4px; word-break: break-all; }
     .user-dropdown-item { width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; font-size: 13px; border-radius: 6px; transition: background 0.15s; color: var(--text); }
-    .user-dropdown-item:hover { background: #f1f3f4; }
+    .user-dropdown-item:hover { background: #f1f5f9; }
     .user-dropdown-item.danger { color: var(--danger); }
-    .user-dropdown-item.danger:hover { background: #fce8e6; }
+    .user-dropdown-item.danger:hover { background: #fee2e2; }
 
     /* ── Layout ── */
     .app { max-width: 1400px; margin: 0 auto; padding: 20px 24px; display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
@@ -88,28 +92,28 @@
     body { overflow-x: auto; }
 
     /* ── Row enabled/disabled toggle ── */
-    .row-disabled td { opacity: 0.25; background: #f8f9fa !important; }
+    .row-disabled td { opacity: 0.25; background: #f8fafc !important; }
     .row-disabled .payment { color: #94a3b8 !important; font-size: 20px !important; }
     .row-check { width: 34px; text-align: center; padding: 0 !important; }
     .row-check input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent); }
 
     /* ── Cards ── */
     .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden; transition: box-shadow 0.25s, transform 0.25s; animation: cardFadeIn 0.45s ease both; }
-    .card:hover { box-shadow: 0 4px 16px rgba(26,115,232,0.12), 0 2px 6px rgba(60,64,67,0.10); transform: translateY(-1px); }
+    .card:hover { box-shadow: 0 4px 16px rgba(37,99,235,0.12), 0 2px 6px rgba(15,23,42,0.10); transform: translateY(-1px); }
     @keyframes cardFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
     .left-col .card              { animation-delay: 0.05s; }
     .info-bar .card:nth-child(1) { animation-delay: 0.10s; }
     .info-bar .card:nth-child(2) { animation-delay: 0.18s; }
     .info-bar .card:nth-child(3) { animation-delay: 0.26s; }
     .right-col > .card           { animation-delay: 0.20s; }
-    .card-header { padding: 12px 20px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--accent); background: #e8f0fe; border-bottom: 1px solid #c5d8fd; }
+    .card-header { padding: 12px 20px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--accent); background: #eff6ff; border-bottom: 1px solid #bfdbfe; }
     .card-body { padding: 20px; }
 
     /* ── Form rows ── */
     .form-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
     .form-row label { font-size: 13px; font-weight: 500; color: var(--text-muted); min-width: 100px; text-align: right; }
     .form-row input, .form-row select { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--card); color: var(--text); transition: border-color 0.2s, box-shadow 0.2s; }
-    .form-row input:focus, .form-row select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); }
+    .form-row input:focus, .form-row select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
     .form-row .currency { position: relative; }
     .form-row .currency::before { content: '$'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 14px; pointer-events: none; z-index: 1; }
     .form-row .currency input { padding-left: 22px; }
@@ -117,7 +121,7 @@
 
     /* ── Summary rows ── */
     .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 20px; color: var(--text); }
-    .summary-row.total { font-weight: 700; font-size: 26px; color: var(--accent); border-top: 2px solid #c5d8fd; padding-top: 10px; margin-top: 6px; }
+    .summary-row.total { font-weight: 700; font-size: 26px; color: var(--accent); border-top: 2px solid #bfdbfe; padding-top: 10px; margin-top: 6px; }
     .summary-row.equity-positive { color: var(--success); }
     .summary-row.equity-negative { color: var(--danger); }
 
@@ -127,59 +131,59 @@
     .info-bar .card-body { padding: 16px 20px; }
     .info-field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: block; margin-bottom: 4px; }
     .info-field input, .info-field select { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--input-bg); color: var(--text); transition: border-color 0.2s, box-shadow 0.2s; }
-    .info-field input:focus, .info-field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); background: #fff; }
+    .info-field input:focus, .info-field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); background: #fff; }
 
     /* ── Tabs ── */
-    .tabs { display: flex; position: relative; background: #f8f9fa; border-bottom: 1px solid var(--border); overflow: hidden; }
+    .tabs { display: flex; position: relative; background: #f8fafc; border-bottom: 1px solid var(--border); overflow: hidden; }
     .tab { flex: 1; padding: 13px 20px; text-align: center; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--text-muted); transition: color 0.2s, background 0.2s; position: relative; z-index: 1; }
-    .tab:hover { background: #e8f0fe; color: var(--accent); }
+    .tab:hover { background: #eff6ff; color: var(--accent); }
     .tab.active { background: #ffffff; color: var(--accent); font-weight: 600; }
     .tab-indicator { position: absolute; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--accent); transition: left 0.3s cubic-bezier(0.4,0,0.2,1), width 0.3s cubic-bezier(0.4,0,0.2,1), background 0.3s ease; left: 0; width: 25%; }
     .tab-content { display: none; }
     .tab-content.active { display: block; animation: tabFadeIn 0.2s ease both; }
     @keyframes tabFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-    #tab-finance.active    { border-top: 3px solid #1a73e8; }
-    #tab-lease.active      { border-top: 3px solid #1e8e3e; }
-    #tab-comparison.active { border-top: 3px solid #e37400; }
-    #tab-cash.active       { border-top: 3px solid #8430ce; }
+    #tab-finance.active    { border-top: 3px solid #2563eb; }
+    #tab-lease.active      { border-top: 3px solid #15803d; }
+    #tab-comparison.active { border-top: 3px solid #b45309; }
+    #tab-cash.active       { border-top: 3px solid #7c3aed; }
 
     /* ── Calc tables ── */
     .calc-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    .calc-table th { padding: 10px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border); background: #f8f9fa; }
+    .calc-table th { padding: 10px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border); background: #f8fafc; }
     .calc-table td { padding: 10px 14px; text-align: center; border-bottom: 1px solid var(--border); background: #ffffff; transition: background 0.15s; }
-    .calc-table tbody tr:hover td { background: #f1f3f4; }
+    .calc-table tbody tr:hover td { background: #f1f5f9; }
     .calc-table td input { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); text-align: center; font-size: 14px; background: var(--input-bg); color: var(--text); transition: border-color 0.2s, box-shadow 0.2s; }
-    .calc-table td input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); background: #fff; }
-    .calc-table .term-label { font-weight: 700; color: var(--accent); background: #e8f0fe; }
+    .calc-table td input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); background: #fff; }
+    .calc-table .term-label { font-weight: 700; color: var(--accent); background: #eff6ff; }
     .calc-table .payment { font-weight: 700; font-size: 32px; color: var(--accent); letter-spacing: -0.5px; font-variant-numeric: tabular-nums; }
     .calc-table td.out { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); }
-    #tab-finance .calc-table tbody tr:nth-child(1) .term-label { border-left: 3px solid #1a73e8; padding-left: 11px; }
-    #tab-finance .calc-table tbody tr:nth-child(2) .term-label { border-left: 3px solid #4285f4; padding-left: 11px; }
-    #tab-finance .calc-table tbody tr:nth-child(3) .term-label { border-left: 3px solid #8ab4f8; padding-left: 11px; }
-    #tab-lease .calc-table tbody tr:nth-child(1) .term-label { border-left: 3px solid #1e8e3e; padding-left: 11px; }
-    #tab-lease .calc-table tbody tr:nth-child(2) .term-label { border-left: 3px solid #34a853; padding-left: 11px; }
+    #tab-finance .calc-table tbody tr:nth-child(1) .term-label { border-left: 3px solid #2563eb; padding-left: 11px; }
+    #tab-finance .calc-table tbody tr:nth-child(2) .term-label { border-left: 3px solid #3b82f6; padding-left: 11px; }
+    #tab-finance .calc-table tbody tr:nth-child(3) .term-label { border-left: 3px solid #93c5fd; padding-left: 11px; }
+    #tab-lease .calc-table tbody tr:nth-child(1) .term-label { border-left: 3px solid #15803d; padding-left: 11px; }
+    #tab-lease .calc-table tbody tr:nth-child(2) .term-label { border-left: 3px solid #16a34a; padding-left: 11px; }
 
     /* ── Comparison grid ── */
     .comparison-grid { width: 100%; border-collapse: collapse; font-size: 14px; }
-    .comparison-grid th { padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: #ffffff; background: #1a73e8; text-align: center; font-weight: 600; }
+    .comparison-grid th { padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: #ffffff; background: #2563eb; text-align: center; font-weight: 600; }
     .comparison-grid th:first-child { text-align: left; border-radius: var(--radius-sm) 0 0 0; }
     .comparison-grid th:last-child  { border-radius: 0 var(--radius-sm) 0 0; }
     .comparison-grid td { padding: 10px 12px; text-align: center; border-bottom: 1px solid var(--border); background: #ffffff; font-variant-numeric: tabular-nums; font-size: 20px; color: var(--text); transition: background 0.15s; }
-    .comparison-grid tr:hover td { background: #f1f3f4; }
+    .comparison-grid tr:hover td { background: #f1f5f9; }
     .comparison-grid .row-label { text-align: left; font-weight: 600; color: var(--text); white-space: nowrap; }
-    .comparison-grid .row-label.finance-row { border-left: 3px solid #1a73e8; padding-left: 12px; }
-    .comparison-grid .row-label.lease-row   { border-left: 3px solid #1e8e3e; padding-left: 12px; }
-    .comparison-grid .best { color: #1e8e3e; font-weight: 700; background: #e6f4ea; }
-    .comparison-grid tr:hover .best { background: #ceead6; }
+    .comparison-grid .row-label.finance-row { border-left: 3px solid #2563eb; padding-left: 12px; }
+    .comparison-grid .row-label.lease-row   { border-left: 3px solid #15803d; padding-left: 12px; }
+    .comparison-grid .best { color: #15803d; font-weight: 700; background: #dcfce7; }
+    .comparison-grid tr:hover .best { background: #bbf7d0; }
 
     /* ── Down payment inputs ── */
-    .down-inputs { display: flex; gap: 12px; padding: 16px 20px; background: #f8f9fa; border-bottom: 1px solid var(--border); align-items: center; }
+    .down-inputs { display: flex; gap: 12px; padding: 16px 20px; background: #f8fafc; border-bottom: 1px solid var(--border); align-items: center; }
     .down-inputs label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); white-space: nowrap; }
     .down-inputs input { width: 110px; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); text-align: center; font-size: 14px; background: white; color: var(--text); transition: border-color 0.2s, box-shadow 0.2s; }
-    .down-inputs input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); }
+    .down-inputs input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
 
     /* ── LTV bar ── */
-    .ltv-bar { display: flex; gap: 12px; padding: 14px 20px; background: #f8f9fa; border-top: 1px solid var(--border); }
+    .ltv-bar { display: flex; gap: 12px; padding: 14px 20px; background: #f8fafc; border-top: 1px solid var(--border); }
     .ltv-item { text-align: center; flex: 1; }
     .ltv-item .ltv-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
     .ltv-item .ltv-value { font-size: 30px; font-weight: 700; color: var(--text); line-height: 1.2; margin: 2px 0 6px; font-variant-numeric: tabular-nums; transition: color 0.3s; }
@@ -196,24 +200,24 @@
     .cash-breakdown-table td { padding: 11px 16px; border-bottom: 1px solid var(--border); }
     .cb-label { color: var(--text-muted); font-weight: 500; font-size: 14px; }
     .cb-value { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; font-size: 15px; color: var(--text); }
-    .cb-section-head td { background: #f8f9fa; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); padding: 7px 16px; border-bottom: 1px solid var(--border); }
-    .cb-otd-row td { background: #e8f0fe; font-size: 17px; font-weight: 700; border-top: 2px solid #c5d8fd; border-bottom: 2px solid #c5d8fd; padding: 13px 16px; }
+    .cb-section-head td { background: #f8fafc; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); padding: 7px 16px; border-bottom: 1px solid var(--border); }
+    .cb-otd-row td { background: #eff6ff; font-size: 17px; font-weight: 700; border-top: 2px solid #bfdbfe; border-bottom: 2px solid #bfdbfe; padding: 13px 16px; }
     .cb-otd-value { color: var(--accent); }
     .cb-equity-row td { border-bottom: 1px solid var(--border); }
-    .cb-due-row td { background: #f5f0ff; border-top: 2px solid #d8b4fe; padding: 14px 16px; }
-    .cb-due-label { font-size: 15px; font-weight: 700; color: #8430ce; }
-    .cb-due-value { color: #8430ce; font-size: 26px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+    .cb-due-row td { background: #f5f3ff; border-top: 2px solid #ddd6fe; padding: 14px 16px; }
+    .cb-due-label { font-size: 15px; font-weight: 700; color: #7c3aed; }
+    .cb-due-value { color: #7c3aed; font-size: 26px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
 
     /* ── Buttons ── */
     .btn { padding: 10px 24px; border: none; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease; position: relative; overflow: hidden; user-select: none; }
     .btn:hover  { transform: translateY(-1px) scale(1.02); }
     .btn:active { transform: translateY(0) scale(0.98); }
     .btn-primary { background: var(--accent); color: white; }
-    .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 14px rgba(26,115,232,0.4); }
-    .btn-outline { background: transparent; color: var(--accent); border: 1px solid #dadce0; }
-    .btn-outline:hover { background: #e8f0fe; border-color: #c5d8fd; box-shadow: var(--shadow-md); }
+    .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 14px rgba(37,99,235,0.4); }
+    .btn-outline { background: transparent; color: var(--accent); border: 1px solid #e2e8f0; }
+    .btn-outline:hover { background: #eff6ff; border-color: #bfdbfe; box-shadow: var(--shadow-md); }
     .ripple-wave { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4); transform: scale(0); animation: rippleAnim 0.55s ease-out forwards; pointer-events: none; }
-    .btn-outline .ripple-wave { background: rgba(26,115,232,0.15); }
+    .btn-outline .ripple-wave { background: rgba(37,99,235,0.15); }
     @keyframes rippleAnim { to { transform: scale(2.8); opacity: 0; } }
 
     /* ── Modal overlay ── */
@@ -222,33 +226,131 @@
     .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--border); }
     .modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
     .modal-close { width: 32px; height: 32px; border: none; background: none; cursor: pointer; border-radius: 50%; font-size: 18px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
-    .modal-close:hover { background: #f1f3f4; color: var(--text); }
+    .modal-close:hover { background: #f1f5f9; color: var(--text); }
     .modal-body { padding: 20px 24px; }
     .modal-search { width: 100%; padding: 10px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; margin-bottom: 16px; transition: border-color 0.2s, box-shadow 0.2s; }
-    .modal-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); }
+    .modal-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
     .modal-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    .modal-table th { padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border); background: #f8f9fa; }
+    .modal-table th { padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border); background: #f8fafc; }
     .modal-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     .modal-table tbody tr { cursor: pointer; }
-    .modal-table tbody tr:hover td { background: #f1f3f4; }
+    .modal-table tbody tr:hover td { background: #f1f5f9; }
 
     /* ── Admin action buttons ── */
     .aab { padding: 4px 12px; border: none; border-radius: 14px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-    .aab-approve { background: #e6f4ea; color: #1e8e3e; } .aab-approve:hover { background: #ceead6; }
-    .aab-promote { background: #e8f0fe; color: #1a73e8; } .aab-promote:hover { background: #d2e3fc; }
-    .aab-revoke  { background: #fce8e6; color: #c5221f; } .aab-revoke:hover  { background: #f5c6c4; }
+    .aab-approve { background: #dcfce7; color: #15803d; } .aab-approve:hover { background: #bbf7d0; }
+    .aab-promote { background: #eff6ff; color: #2563eb; } .aab-promote:hover { background: #dbeafe; }
+    .aab-revoke  { background: #fee2e2; color: #b91c1c; } .aab-revoke:hover  { background: #fecaca; }
 
     /* ── Deal status label ── */
-    .deal-status-label { font-size: 12px; color: var(--text-muted); background: #f8f9fa; border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; white-space: nowrap; }
-    .deal-status-label.editing { color: #e37400; border-color: #f9ab00; background: #fef7e0; }
+    .deal-status-label { font-size: 12px; color: var(--text-muted); background: #f8fafc; border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; white-space: nowrap; }
+    .deal-status-label.editing { color: #b45309; border-color: #f59e0b; background: #fef3c7; }
 
     /* ── Toast ── */
     #toastContainer { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
     .toast { padding: 12px 20px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; box-shadow: var(--shadow-lg); transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); max-width: 320px; line-height: 1.4; pointer-events: auto; }
     .toast-show { transform: translateX(0); }
-    .toast-success { background: #1e8e3e; color: white; }
-    .toast-error   { background: #c5221f; color: white; }
+    .toast-success { background: #15803d; color: white; }
+    .toast-error   { background: #b91c1c; color: white; }
     .toast-info    { background: var(--accent); color: white; }
+
+    /* ══ Nov 2026 redesign: slate + blue, same palette as CarSmart CRM ══ */
+    body { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-variant-numeric: tabular-nums; }
+    .form-row input, .form-row select, .info-field input, .calc-table td input, .down-inputs input, .auth-field input, .modal-search { border-color: var(--border-strong); }
+
+    .header { background: var(--chrome); color: #fff; padding: 10px 20px; box-shadow: none; flex-wrap: wrap; gap: 10px 12px; }
+    .header::after { display: none; }
+    .header h1 { font-size: 18px; color: #fff; }
+    .header h1 span { color: #93c5fd; }
+    .header-search-input { height: 38px; padding: 0 12px; border-radius: 8px; background: #334155; border-color: #475569; color: #fff; }
+    .header-search-input::placeholder { color: #cbd5e1; }
+    .header-search-input:focus { background: #fff; color: var(--text); }
+    .header-right-group { flex-wrap: wrap; gap: 8px; flex-shrink: 1; min-width: 0; }
+    .header-date-small { color: #cbd5e1; }
+    .hbtn { height: 38px; padding: 0 14px; border-radius: 8px; border: 1px solid #475569; background: transparent; color: #fff; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+    .hbtn:hover { background: #334155; }
+    .hbtn-primary { background: var(--accent); border-color: var(--accent); font-weight: 700; padding: 0 18px; }
+    .hbtn-primary:hover { background: var(--accent-hover); }
+    .hbtn:disabled { opacity: 0.75; cursor: wait; }
+    .hbtn:focus-visible, .fin-chip:focus-visible, .tab:focus-visible, .admin-pill:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+    .admin-pill { height: 38px; border-radius: 8px; background: #334155; color: #fff; }
+    .admin-pill:hover { background: #475569; }
+    .user-menu-btn:hover { background: #334155; }
+    .user-menu-name { color: #fff; }
+    .deal-status-label { background: transparent; border-color: #475569; color: #cbd5e1; }
+    .deal-status-label.editing { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+
+    .info-bar { display: flex; flex-wrap: wrap; gap: 12px; background: var(--card); border-bottom: 1px solid var(--border); padding: 10px 20px; }
+    .info-field { min-width: 0; }
+    .info-field label { font-weight: 600; }
+    .info-field input { height: 36px; padding: 0 10px; font-weight: 600; background: #fff; }
+
+    .app { grid-template-columns: 320px 1fr; padding: 16px 20px; gap: 16px; }
+    .right-col { gap: 16px; }
+    .card { animation: none; box-shadow: none; transition: none; }
+    .card:hover { transform: none; box-shadow: none; }
+    .card-header { padding: 10px 14px; background: #fff; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 700; letter-spacing: 0.5px; }
+    .card-body { padding: 12px 14px; }
+    .form-row { margin-bottom: 6px; }
+    .form-row label { text-align: left; min-width: 92px; }
+    .form-row input { height: 34px; padding-top: 0; padding-bottom: 0; text-align: right; font-weight: 600; }
+    .form-row .currency { min-width: 0; }
+    .form-row .currency input { width: 100%; }
+    .left-col .card-body { overflow: hidden; }
+    .summary-row { font-size: 14px; }
+    .summary-row > span:last-child { font-weight: 600; }
+    .summary-row.total { background: #eff6ff; border: none; border-radius: 8px; padding: 12px 14px; margin: 8px 0 2px; color: #1d4ed8; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+    .summary-row.total > span:last-child { font-size: 24px; font-weight: 700; letter-spacing: 0; }
+
+    .tabs { background: #f8fafc; }
+    .tab { height: 46px; padding: 0 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .tab::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--dot, var(--accent)); flex-shrink: 0; }
+    .tab:hover { background: #eff6ff; color: var(--text); }
+    .tab.active { color: var(--text); font-weight: 700; }
+    #tab-finance.active, #tab-lease.active, #tab-comparison.active, #tab-cash.active { border-top: none; }
+
+    .calc-table .term-label { background: transparent; color: var(--text); font-size: 15px; }
+    .calc-table .payment { font-size: 24px; color: var(--text); }
+    .calc-table td.out { font-size: 16px; }
+    .ltv-item .ltv-value { font-size: 22px; }
+    .comparison-grid th { background: #1e293b; }
+    .comparison-grid td { font-size: 16px; }
+
+    /* ── Finance tab: term buttons, three down payment boxes, payment grid ── */
+    .d1 { --dc: #2563eb; --ds: #eff6ff; --di: #1d4ed8; }
+    .d2 { --dc: #0f766e; --ds: #f0fdfa; --di: #0f766e; }
+    .d3 { --dc: #7c3aed; --ds: #f5f3ff; --di: #6d28d9; }
+    .fin-controls { padding: 16px 18px 2px; display: flex; flex-direction: column; gap: 16px; }
+    .fin-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+    .fin-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .fin-chip { min-width: 76px; height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border-strong); background: #fff; color: var(--text-muted); font: inherit; font-weight: 700; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+    .fin-chip:hover { border-color: #94a3b8; }
+    .fin-chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .fin-downs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .fin-down { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); border-top: 4px solid var(--dc); background: var(--ds); }
+    .fin-down-name { font-size: 12px; font-weight: 700; color: var(--di); }
+    .fin-down-field { display: flex; align-items: center; gap: 6px; font-size: 18px; font-weight: 700; color: var(--text-muted); }
+    .fin-down input { width: 100%; min-width: 0; height: 44px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: 6px; background: #fff; color: var(--text); font: inherit; font-size: 20px; font-weight: 700; }
+    .fin-down input:focus, .fin-grid td.fin-in input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    .fin-grid-wrap { padding: 14px 18px 10px; overflow-x: auto; }
+    .fin-grid { width: 100%; min-width: 620px; border-collapse: separate; border-spacing: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .fin-grid th { padding: 9px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-muted); background: #f8fafc; border-bottom: 1px solid var(--border); text-align: left; }
+    .fin-grid th.fin-dh { text-align: right; background: var(--ds); color: var(--di); }
+    .fin-grid td { padding: 8px 12px; border-top: 1px solid var(--border); background: #fff; vertical-align: middle; }
+    .fin-grid tr.alt td { background: #f8fafc; }
+    .fin-term { width: 84px; font-weight: 700; font-size: 15px; white-space: nowrap; }
+    .fin-grid td.fin-in { width: 96px; padding: 6px 8px; }
+    .fin-grid td.fin-in input { width: 100%; height: 36px; padding: 0 8px; text-align: center; border: 1px solid var(--border-strong); border-radius: 6px; background: #fff; color: var(--text); font: inherit; font-weight: 600; }
+    .fin-cell { text-align: right; }
+    .fin-pay { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); }
+    .fin-sub { font-size: 11px; color: var(--text-muted); }
+    .fin-ltv { font-size: 11px; font-weight: 700; }
+    .fin-ltv.ok { color: var(--success); } .fin-ltv.warning { color: var(--warning); } .fin-ltv.over { color: var(--danger); }
+    .fin-empty td { text-align: center; padding: 28px 12px; color: var(--text-muted); }
+    .fin-note { padding: 0 18px 16px; font-size: 12px; color: var(--text-muted); }
+    @media (max-width: 900px) { .header { position: static; } .header-date-small { display: none; } }
+    @media (max-width: 640px) { .fin-downs { grid-template-columns: 1fr; } .tab { font-size: 13px; padding: 0 6px; } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
     /* ── Responsive ── */
     @media (max-width: 1024px) { .app { grid-template-columns: 1fr; } .info-bar { grid-template-columns: 1fr; } }
@@ -266,7 +368,13 @@
       .tabs { display: none !important; }
       .left-col { display: none !important; }
       .info-bar { display: none !important; }
-      .right-col > div:last-child { display: none !important; }
+      .fin-controls, .fin-note { display: none !important; }
+      .fin-grid-wrap { padding: 0; overflow: visible; }
+      .fin-grid { min-width: 0; }
+      .fin-grid th { font-size: 9px; padding: 6px 8px; }
+      .fin-grid td { padding: 6px 8px; }
+      .fin-pay { font-size: 15px; }
+      .fin-grid td.fin-in input { border: none; background: transparent; height: auto; padding: 0; }
       .tab-content { display: none !important; }
       .tab-content.active { display: block !important; border-top: none !important; }
       .calc-table td input, .down-inputs input { border: none; background: transparent; box-shadow: none; padding: 4px 0; font-weight: 600; }
@@ -275,17 +383,17 @@
       #printDealHeader { display: block !important; margin-bottom: 14px; }
       #printPricingSection { display: block !important; margin-bottom: 14px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px 16px; background: #fafafa; }
       .pp-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 24px; }
-      .pp-col-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #5f6368; font-weight: 600; margin-bottom: 6px; }
+      .pp-col-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; font-weight: 600; margin-bottom: 6px; }
       .pp-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; border-bottom: 1px solid #eeeeee; }
       .pp-row:last-child { border-bottom: none; }
-      .pp-row .pp-lbl { color: #5f6368; }
-      .pp-row .pp-val { font-weight: 600; color: #202124; }
-      .pp-row.pp-total { border-top: 2px solid #c5d8fd; border-bottom: none; padding-top: 6px; margin-top: 2px; }
-      .pp-row.pp-total .pp-lbl { color: #1a73e8; font-weight: 700; font-size: 12px; }
-      .pp-row.pp-total .pp-val { color: #1a73e8; font-size: 14px; font-weight: 700; }
-      .pp-otd-box { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #e8f0fe; border-radius: 6px; padding: 10px 14px; border: 1px solid #c5d8fd; text-align: center; }
-      .pp-otd-box .pp-otd-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #1a73e8; font-weight: 600; }
-      .pp-otd-box .pp-otd-val { font-size: 22px; font-weight: 700; color: #1a73e8; margin-top: 3px; }
+      .pp-row .pp-lbl { color: #475569; }
+      .pp-row .pp-val { font-weight: 600; color: #0f172a; }
+      .pp-row.pp-total { border-top: 2px solid #bfdbfe; border-bottom: none; padding-top: 6px; margin-top: 2px; }
+      .pp-row.pp-total .pp-lbl { color: #2563eb; font-weight: 700; font-size: 12px; }
+      .pp-row.pp-total .pp-val { color: #2563eb; font-size: 14px; font-weight: 700; }
+      .pp-otd-box { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #eff6ff; border-radius: 6px; padding: 10px 14px; border: 1px solid #bfdbfe; text-align: center; }
+      .pp-otd-box .pp-otd-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #2563eb; font-weight: 600; }
+      .pp-otd-box .pp-otd-val { font-size: 22px; font-weight: 700; color: #2563eb; margin-top: 3px; }
       .ltv-bar { border-top: 1px solid #e0e0e0; background: #fafafa; }
       .ltv-progress { display: none; }
       .row-disabled { display: none !important; }
@@ -354,23 +462,27 @@
 <div id="mainApp" style="display:none;">
 
 <div class="header">
-  <div style="display:flex;align-items:center;gap:18px;flex:1;min-width:0;">
+  <div style="display:flex;align-items:center;gap:14px;flex:1 1 320px;min-width:0;">
     <h1>Auto<span>Desk</span> Pro</h1>
     <div class="header-search">
-      <span class="header-search-icon">🔍</span>
-      <input type="text" class="header-search-input" id="headerSearchInput"
+      <input type="text" class="header-search-input" id="headerSearchInput" aria-label="Search deals"
              placeholder="Search deals by name, salesperson, dealer…"
              onkeydown="if(event.key==='Enter')openLoadModal(this.value.trim())">
     </div>
   </div>
   <div class="header-right-group">
     <div class="header-date-small" id="headerDate"></div>
-    <button class="admin-pill" id="adminBtn" onclick="openAdminPanel()" style="display:none;">⚙ Admin</button>
+    <span class="deal-status-label" id="dealStatusLabel">New Deal</span>
+    <button class="hbtn" onclick="resetAll()">Reset</button>
+    <button class="hbtn" onclick="openLoadModal('')">Load deal</button>
+    <button class="hbtn" onclick="window.print()">Print / PDF</button>
+    <button class="hbtn hbtn-primary" id="saveDealBtn" onclick="saveDeal()">Save deal</button>
+    <button class="admin-pill" id="adminBtn" onclick="openAdminPanel()" style="display:none;">Admin</button>
     <div class="user-menu-wrap">
       <button class="user-menu-btn" onclick="toggleUserDropdown()" id="userMenuBtn">
         <div class="user-avatar-circle" id="userAvatar"></div>
         <span class="user-menu-name" id="userDisplayName"></span>
-        <span style="font-size:9px;color:var(--text-muted);">▼</span>
+        <span style="font-size:9px;color:#cbd5e1;">▼</span>
       </button>
       <div class="user-dropdown" id="userDropdown" style="display:none;">
         <div class="user-dropdown-email" id="userDropdownEmail"></div>
@@ -378,6 +490,15 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Deal info strip (class name kept: Reset and Print look for .info-bar) -->
+<div class="info-bar">
+  <div class="info-field" style="flex:2 1 180px;"><label for="customerName">Customer</label><input type="text" id="customerName" placeholder="Customer name"></div>
+  <div class="info-field" style="flex:2 1 200px;"><label for="vehicleName">Vehicle</label><input type="text" id="vehicleName" placeholder="Year Make Model"></div>
+  <div class="info-field" style="flex:1 1 100px;"><label for="stockNum">Stock #</label><input type="text" id="stockNum" placeholder="Stock #"></div>
+  <div class="info-field" style="flex:1 1 130px;"><label for="salesperson">Salesperson</label><input type="text" id="salesperson" placeholder="Name"></div>
+  <div class="info-field" style="flex:1.5 1 160px;"><label for="dealerName">Dealer</label><input type="text" id="dealerName" placeholder="Dealership name"></div>
 </div>
 
 <div class="app">
@@ -398,7 +519,7 @@
         <!-- Discount readout: derived from MSRP - selling price, never an input -->
         <div class="form-row" id="discountRow" style="display:none;margin-top:-6px;">
           <label></label>
-          <div style="flex:1;font-size:12px;font-weight:600;color:#1e8e3e;" id="discountDisplay"></div>
+          <div style="flex:1;font-size:12px;font-weight:600;color:#15803d;" id="discountDisplay"></div>
         </div>
         <div class="form-row">
           <label>Accessories</label>
@@ -419,14 +540,14 @@
               <button id="licAutoBtn" onclick="licManual=false;recalc()" title="Reset to CA DMV auto-calculation"
                 style="padding:6px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--accent);cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0;">↻ Auto</button>
             </div>
-            <div style="display:flex;gap:6px;align-items:center;margin-top:7px;font-size:12px;color:#5f6368;">
+            <div style="display:flex;gap:6px;align-items:center;margin-top:7px;font-size:12px;color:#475569;">
               <span>Fuel</span>
               <select id="fuelType" onchange="recalc()" title="EVs don't pay the $20 smog abatement fee"
                 style="padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text);">
                 <option value="gas">Gas</option><option value="hybrid">Hybrid</option><option value="ev">Electric</option>
               </select>
             </div>
-            <div id="licBreakdown" style="margin-top:7px;background:#f0f6ff;border:1px solid #c5d8fd;border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;line-height:1.8;"></div>
+            <div id="licBreakdown" style="margin-top:7px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;line-height:1.8;"></div>
           </div>
         </div>
         <div class="form-row">
@@ -439,12 +560,12 @@
           <input type="text" id="taxRate" value="7.75"
             style="width:60px;flex:none;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;text-align:center;background:var(--input-bg);color:var(--text);transition:border-color 0.2s,box-shadow 0.2s;"
             oninput="recalc()"
-            onfocus="this.style.borderColor='#1a73e8';this.style.boxShadow='0 0 0 3px rgba(26,115,232,0.15)'"
+            onfocus="this.style.borderColor='#2563eb';this.style.boxShadow='0 0 0 3px rgba(37,99,235,0.15)'"
             onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
           <span style="font-size:14px;color:var(--text-muted);">%</span>
         </div>
         <div class="summary-row"><span>Sales Tax</span><span id="salesTaxDisplay">$0.00</span></div>
-        <div class="summary-row total"><span>Total</span><span id="totalDisplay">$0.00</span></div>
+        <div class="summary-row total"><span>Total out the door</span><span id="totalDisplay">$0.00</span></div>
         <div class="divider"></div>
         <div class="form-row">
           <label>Trade Value</label>
@@ -459,12 +580,12 @@
         </div>
         <div class="divider dealer-only"></div>
         <div class="form-row dealer-only" style="margin-bottom:4px;">
-          <label>🔒 Invoice</label>
+          <label>Invoice</label>
           <div class="currency" style="flex:1;position:relative;">
-            <input type="text" id="invoiceCost" value="" placeholder="Dealer cost" oninput="recalc()" style="background:#f8f9fa;border-style:dashed;">
+            <input type="text" id="invoiceCost" value="" placeholder="Dealer cost" oninput="recalc()" style="background:#f8fafc;border-style:dashed;">
           </div>
         </div>
-        <div class="dealer-only" style="font-size:11px;color:#9aa0a6;line-height:1.5;">Dealer only — drives LTV. Never printed or shown on offers.</div>
+        <div class="dealer-only" style="font-size:11px;color:#64748b;line-height:1.5;">Dealer only — drives LTV. Never printed or shown on offers.</div>
       </div>
     </div>
   </div>
@@ -474,22 +595,22 @@
 
     <!-- Print-only deal header -->
     <div id="printDealHeader">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;border-bottom:2px solid #1a73e8;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;border-bottom:2px solid #2563eb;margin-bottom:14px;">
         <div>
-          <div style="font-size:20px;font-weight:700;color:#202124;letter-spacing:-0.3px;">Auto<span style="color:#1a73e8;">Desk</span> Pro</div>
-          <div style="font-size:11px;color:#5f6368;margin-top:2px;">Finance &amp; Lease Calculator</div>
+          <div style="font-size:20px;font-weight:700;color:#0f172a;letter-spacing:-0.3px;">Auto<span style="color:#2563eb;">Desk</span> Pro</div>
+          <div style="font-size:11px;color:#475569;margin-top:2px;">Finance &amp; Lease Calculator</div>
         </div>
-        <div style="text-align:right;font-size:12px;color:#5f6368;line-height:1.6;">
+        <div style="text-align:right;font-size:12px;color:#475569;line-height:1.6;">
           <div id="printDate"></div>
-          <div id="printTabLabel" style="font-weight:600;color:#202124;margin-top:2px;"></div>
+          <div id="printTabLabel" style="font-weight:600;color:#0f172a;margin-top:2px;"></div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding-bottom:14px;border-bottom:1px solid #e0e0e0;margin-bottom:4px;">
-        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#5f6368;font-weight:600;">Customer</div><div id="printCustomer" style="font-weight:600;font-size:13px;margin-top:3px;color:#202124;">—</div></div>
-        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#5f6368;font-weight:600;">Vehicle</div><div id="printVehicle" style="font-weight:600;font-size:13px;margin-top:3px;color:#202124;">—</div></div>
-        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#5f6368;font-weight:600;">Stock #</div><div id="printStock" style="font-weight:600;font-size:13px;margin-top:3px;color:#202124;">—</div></div>
-        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#5f6368;font-weight:600;">Salesperson</div><div id="printSalesperson" style="font-weight:600;font-size:13px;margin-top:3px;color:#202124;">—</div></div>
-        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#5f6368;font-weight:600;">Dealer</div><div id="printDealer" style="font-weight:600;font-size:13px;margin-top:3px;color:#202124;">—</div></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#475569;font-weight:600;">Customer</div><div id="printCustomer" style="font-weight:600;font-size:13px;margin-top:3px;color:#0f172a;">—</div></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#475569;font-weight:600;">Vehicle</div><div id="printVehicle" style="font-weight:600;font-size:13px;margin-top:3px;color:#0f172a;">—</div></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#475569;font-weight:600;">Stock #</div><div id="printStock" style="font-weight:600;font-size:13px;margin-top:3px;color:#0f172a;">—</div></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#475569;font-weight:600;">Salesperson</div><div id="printSalesperson" style="font-weight:600;font-size:13px;margin-top:3px;color:#0f172a;">—</div></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#475569;font-weight:600;">Dealer</div><div id="printDealer" style="font-weight:600;font-size:13px;margin-top:3px;color:#0f172a;">—</div></div>
       </div>
     </div>
 
@@ -499,7 +620,7 @@
         <div>
           <div class="pp-col-label">Vehicle &amp; Fees</div>
           <div class="pp-row" id="pp-row-msrp"><span class="pp-lbl">MSRP</span><span class="pp-val" id="pp-msrp">—</span></div>
-          <div class="pp-row" id="pp-row-disc"><span class="pp-lbl">Discount</span><span class="pp-val" id="pp-disc" style="color:#1e8e3e;">—</span></div>
+          <div class="pp-row" id="pp-row-disc"><span class="pp-lbl">Discount</span><span class="pp-val" id="pp-disc" style="color:#15803d;">—</span></div>
           <div class="pp-row"><span class="pp-lbl">Selling Price</span><span class="pp-val" id="pp-price">—</span></div>
           <div class="pp-row"><span class="pp-lbl">Accessories</span><span class="pp-val" id="pp-acc">—</span></div>
           <div class="pp-row"><span class="pp-lbl">Doc Fee</span><span class="pp-val" id="pp-doc">—</span></div>
@@ -523,81 +644,43 @@
       </div>
     </div>
 
-    <!-- Deal Info -->
-    <div class="info-bar">
-      <div class="card">
-        <div class="card-body">
-          <div class="info-field"><label>Customer</label><input type="text" id="customerName" placeholder="Customer name"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body">
-          <div class="info-field"><label>Vehicle</label><input type="text" id="vehicleName" placeholder="Year Make Model"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body">
-          <div class="info-field" style="display:flex;gap:12px;margin-bottom:10px;">
-            <div style="flex:1;"><label>Stock #</label><input type="text" id="stockNum" placeholder="Stock #"></div>
-            <div style="flex:1;"><label>Salesperson</label><input type="text" id="salesperson" placeholder="Name"></div>
-          </div>
-          <div class="info-field"><label>Dealer Name</label><input type="text" id="dealerName" placeholder="Dealership name"></div>
-        </div>
-      </div>
-    </div>
-
     <!-- Finance & Lease Tabs -->
     <div class="card">
       <div class="tabs">
-        <button class="tab active" onclick="switchTab('finance', this)">Finance</button>
-        <button class="tab" onclick="switchTab('lease', this)">Lease</button>
-        <button class="tab" onclick="switchTab('comparison', this)">Payment Comparison</button>
-        <button class="tab" onclick="switchTab('cash', this)">Cash</button>
+        <button class="tab active" style="--dot:#2563eb;" onclick="switchTab('finance', this)">Finance</button>
+        <button class="tab" style="--dot:#16a34a;" onclick="switchTab('lease', this)">Lease</button>
+        <button class="tab" style="--dot:#d97706;" onclick="switchTab('comparison', this)">Payment Comparison</button>
+        <button class="tab" style="--dot:#7c3aed;" onclick="switchTab('cash', this)">Cash</button>
         <div class="tab-indicator" id="tabIndicator"></div>
       </div>
 
       <!-- FINANCE TAB -->
       <div class="tab-content active" id="tab-finance">
-        <table class="calc-table">
-          <thead><tr><th class="row-check"></th><th>Term</th><th>APR %</th><th>Rebate</th><th>Down Payment</th><th>Amount Financed</th><th>Monthly Payment</th><th>Total Cost</th></tr></thead>
-          <tbody>
-            <tr id="finRow48">
-              <td class="row-check"><input type="checkbox" id="finCheck48" checked onchange="toggleFinRow(48)"></td>
-              <td class="term-label">48 mo</td>
-              <td><input type="text" id="finRate48"   value="5.9"   oninput="recalc()"></td>
-              <td><input type="text" id="finRebate48" value="0"     oninput="recalc()"></td>
-              <td><input type="text" id="finDown48"   value="2,000" oninput="recalc()"></td>
-              <td id="finAmount48"  class="out" style="color:#94a3b8;">—</td>
-              <td id="finPayment48" class="payment">—</td>
-              <td id="finTotal48"   class="out" style="color:#94a3b8;">—</td>
-            </tr>
-            <tr id="finRow60">
-              <td class="row-check"><input type="checkbox" id="finCheck60" checked onchange="toggleFinRow(60)"></td>
-              <td class="term-label">60 mo</td>
-              <td><input type="text" id="finRate60"   value="6.4"   oninput="recalc()"></td>
-              <td><input type="text" id="finRebate60" value="0"     oninput="recalc()"></td>
-              <td><input type="text" id="finDown60"   value="2,000" oninput="recalc()"></td>
-              <td id="finAmount60"  class="out" style="color:#94a3b8;">—</td>
-              <td id="finPayment60" class="payment">—</td>
-              <td id="finTotal60"   class="out" style="color:#94a3b8;">—</td>
-            </tr>
-            <tr id="finRow72">
-              <td class="row-check"><input type="checkbox" id="finCheck72" checked onchange="toggleFinRow(72)"></td>
-              <td class="term-label">72 mo</td>
-              <td><input type="text" id="finRate72"   value="6.9"   oninput="recalc()"></td>
-              <td><input type="text" id="finRebate72" value="0"     oninput="recalc()"></td>
-              <td><input type="text" id="finDown72"   value="2,000" oninput="recalc()"></td>
-              <td id="finAmount72"  class="out" style="color:#94a3b8;">—</td>
-              <td id="finPayment72" class="payment">—</td>
-              <td id="finTotal72"   class="out" style="color:#94a3b8;">—</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="ltv-bar dealer-only">
-          <div class="ltv-item"><div class="ltv-label">LTV 48mo (invoice)</div><div class="ltv-value" id="ltv48">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="ltvFill48" style="width:0%"></div></div></div>
-          <div class="ltv-item"><div class="ltv-label">LTV 60mo (invoice)</div><div class="ltv-value" id="ltv60">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="ltvFill60" style="width:0%"></div></div></div>
-          <div class="ltv-item"><div class="ltv-label">LTV 72mo (invoice)</div><div class="ltv-value" id="ltv72">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="ltvFill72" style="width:0%"></div></div></div>
+        <div class="fin-controls">
+          <div>
+            <div class="fin-label" id="finTermsLabel">Terms — tap to turn on or off</div>
+            <div class="fin-chips" id="finChips" role="group" aria-labelledby="finTermsLabel"></div>
+          </div>
+          <div>
+            <div class="fin-label">Down payment — type in box 1, boxes 2 and 3 fill in</div>
+            <div class="fin-downs">
+              <label class="fin-down d1"><span class="fin-down-name">Box 1 — you type this</span>
+                <span class="fin-down-field">$<input type="text" id="finDown1" value="0.00" inputmode="decimal" oninput="onDown1Input()"></span></label>
+              <label class="fin-down d2"><span class="fin-down-name" id="finDownName2">Box 2 — auto</span>
+                <span class="fin-down-field">$<input type="text" id="finDown2" value="500.00" inputmode="decimal" oninput="onDownManual(2)"></span></label>
+              <label class="fin-down d3"><span class="fin-down-name" id="finDownName3">Box 3 — auto</span>
+                <span class="fin-down-field">$<input type="text" id="finDown3" value="1,000.00" inputmode="decimal" oninput="onDownManual(3)"></span></label>
+            </div>
+          </div>
         </div>
+        <div class="fin-grid-wrap">
+          <table class="fin-grid">
+            <thead><tr><th>Term</th><th>APR %</th><th>Rebate</th>
+              <th class="fin-dh d1" id="finHead1">$0 down</th><th class="fin-dh d2" id="finHead2">$500 down</th><th class="fin-dh d3" id="finHead3">$1,000 down</th></tr></thead>
+            <tbody id="finBody"></tbody>
+          </table>
+        </div>
+        <div class="fin-note">Monthly payment in bold, amount financed underneath.</div>
       </div>
 
       <!-- LEASE TAB -->
@@ -610,7 +693,7 @@
               <td class="term-label">24 mo</td>
               <td><input type="text" id="leaseMF24"     value="0.00125" oninput="recalc()"></td>
               <td><input type="text" id="leaseRebate24" value="0"       oninput="recalc()"></td>
-              <td><input type="text" id="leaseCap24"    value="2,000"   oninput="recalc()"></td>
+              <td><input type="text" id="leaseCap24"    value="0"       oninput="recalc()"></td>
               <td><input type="text" id="leaseResid24"  value="62"      oninput="onResidPctInput(24)"></td>
               <td><input type="text" id="leaseResidDollar24" oninput="onResidDollarInput(24)" placeholder="auto"></td>
               <td><input type="text" id="leaseMiles24"  value="12,000"  oninput="recalc()"></td>
@@ -621,7 +704,7 @@
               <td class="term-label">36 mo</td>
               <td><input type="text" id="leaseMF36"     value="0.00125" oninput="recalc()"></td>
               <td><input type="text" id="leaseRebate36" value="0"       oninput="recalc()"></td>
-              <td><input type="text" id="leaseCap36"    value="2,000"   oninput="recalc()"></td>
+              <td><input type="text" id="leaseCap36"    value="0"       oninput="recalc()"></td>
               <td><input type="text" id="leaseResid36"  value="55"      oninput="onResidPctInput(36)"></td>
               <td><input type="text" id="leaseResidDollar36" oninput="onResidDollarInput(36)" placeholder="auto"></td>
               <td><input type="text" id="leaseMiles36"  value="12,000"  oninput="recalc()"></td>
@@ -679,15 +762,6 @@
       </div>
     </div>
 
-    <!-- Action Bar -->
-    <div style="display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
-      <span class="deal-status-label" id="dealStatusLabel">New Deal</span>
-      <button class="btn btn-outline" onclick="resetAll()">Reset All</button>
-      <button class="btn btn-outline" onclick="openLoadModal('')">📂 Load Deal</button>
-      <button class="btn btn-primary" id="saveDealBtn" onclick="saveDeal()">💾 Save Deal</button>
-      <button class="btn btn-outline" onclick="window.print()">🖨 Print / Save as PDF</button>
-    </div>
-
   </div><!-- end right-col -->
 </div><!-- end app -->
 </div><!-- end mainApp -->
@@ -696,7 +770,7 @@
 <div id="adminModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeAdminPanel()">
   <div class="modal-box">
     <div class="modal-header">
-      <span class="modal-title">⚙ User Management</span>
+      <span class="modal-title">User Management</span>
       <button class="modal-close" onclick="closeAdminPanel()">✕</button>
     </div>
     <div class="modal-body">
@@ -712,7 +786,7 @@
 <div id="loadDealModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeLoadModal()">
   <div class="modal-box">
     <div class="modal-header">
-      <span class="modal-title">📂 Load Deal</span>
+      <span class="modal-title">Load Deal</span>
       <button class="modal-close" onclick="closeLoadModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -922,10 +996,69 @@
   });
 
   // ── Row toggle (Finance / Lease) ──────────────────────────────
-  function toggleFinRow(term) {
-    const row = document.getElementById('finRow' + term);
-    if (row) row.classList.toggle('row-disabled', !document.getElementById('finCheck' + term).checked);
+  // Finance: any of these terms can be on at once; one set of three down
+  // payments applies to every term. Box 1 is typed; boxes 2 and 3 follow it
+  // (2x and 3x, or $500 / $1,000 while box 1 is $0) until someone types over
+  // them, and go back to following as soon as box 1 changes.
+  const FIN_TERMS       = [24,36,48,60,72,84,96];
+  const FIN_DEFAULT_APR = { 24:4.9, 36:5.4, 48:5.9, 60:6.4, 72:6.9, 84:7.4, 96:7.9 };
+  const FIN_DEFAULT_ON  = [48,60,72];
+  let finOn    = new Set(FIN_DEFAULT_ON);
+  let finModel = [];  // last computed numbers per term; recalc() fills it, Save reads it
+
+  function buildFinanceUI() {
+    document.getElementById('finChips').innerHTML = FIN_TERMS.map(t =>
+      `<button type="button" class="fin-chip" id="finChip${t}" onclick="toggleFinTerm(${t})">${t} mo</button>`).join('');
+    document.getElementById('finBody').innerHTML = FIN_TERMS.map(t => `
+      <tr id="finRow${t}">
+        <td class="fin-term">${t} mo</td>
+        <td class="fin-in"><input type="text" id="finRate${t}" value="${FIN_DEFAULT_APR[t]}" inputmode="decimal" aria-label="APR for ${t} months" oninput="recalc()"></td>
+        <td class="fin-in"><input type="text" id="finRebate${t}" value="0" inputmode="decimal" aria-label="Rebate for ${t} months" oninput="recalc()"></td>
+        ${[1,2,3].map(i => `<td class="fin-cell"><div class="fin-pay" id="finPay${t}_${i}">—</div><div class="fin-sub" id="finAmt${t}_${i}"></div><div class="fin-ltv dealer-only" id="finLtv${t}_${i}"></div></td>`).join('')}
+      </tr>`).join('') +
+      '<tr class="fin-empty" id="finEmptyRow" style="display:none;"><td colspan="6">Turn on at least one term above to see payments.</td></tr>';
+    syncFinTerms();
   }
+  function syncFinTerms() {
+    let shown = 0;
+    FIN_TERMS.forEach(t => {
+      const on = finOn.has(t), chip = document.getElementById('finChip'+t), row = document.getElementById('finRow'+t);
+      chip.classList.toggle('on', on); chip.setAttribute('aria-pressed', on);
+      row.style.display = on ? '' : 'none';
+      row.classList.toggle('alt', on && shown % 2 === 1);
+      if (on) shown++;
+    });
+    document.getElementById('finEmptyRow').style.display = shown ? 'none' : '';
+  }
+  function toggleFinTerm(t) {
+    if (finOn.has(t)) finOn.delete(t); else finOn.add(t);
+    syncFinTerms(); recalc();
+  }
+  function onDown1Input() {
+    [2,3].forEach(i => { document.getElementById('finDown'+i).dataset.manual = 'false'; });
+    recalc();
+  }
+  function onDownManual(i) {
+    const el = document.getElementById('finDown'+i);
+    el.dataset.manual = el.value.trim() === '' ? 'false' : 'true';
+    recalc();
+  }
+  // The three down payments in effect; also keeps the auto boxes filled in.
+  function finDowns() {
+    const d1 = parseNum('finDown1');
+    const auto = [d1, d1 === 0 ? 500 : d1*2, d1 === 0 ? 1000 : d1*3];
+    return [1,2,3].map(i => {
+      if (i === 1) return d1;
+      const el = document.getElementById('finDown'+i), manual = el.dataset.manual === 'true';
+      const name = document.getElementById('finDownName'+i);
+      if (name) name.textContent = 'Box '+i+(manual ? ' — your number' : ' — auto');
+      if (manual) return parseNum('finDown'+i);
+      if (document.activeElement !== el) el.value = fmt(auto[i-1]);
+      return auto[i-1];
+    });
+  }
+  const round2 = n => Math.round(n*100)/100;
+
   function toggleLeaseRow(term) {
     const row = document.getElementById('leaseRow' + term);
     if (row) row.classList.toggle('row-disabled', !document.getElementById('leaseCheck' + term).checked);
@@ -948,7 +1081,7 @@
       return;
     }
     const btn = document.getElementById('saveDealBtn');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Saving…'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
     const deal = {
       user_id:       currentUser.id,
       lead_id:       dealLeadId || null,
@@ -981,15 +1114,15 @@
       if (data) activeDealId = data.id;
     }
     if (error) {
-      if (btn) { btn.disabled = false; btn.textContent = '💾 Save Deal'; btn.style.background = ''; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Save deal'; btn.style.background = ''; }
       showToast('Save failed: ' + error.message, 'error');
     } else {
       showToast(activeDealId ? 'Deal updated!' : 'Deal saved!', 'success');
       updateDealStatus();
       if (btn) {
         btn.textContent = '✓ Saved!';
-        btn.style.background = '#1e8e3e';
-        setTimeout(() => { btn.disabled = false; btn.textContent = '💾 Save Deal'; btn.style.background = ''; }, 2500);
+        btn.style.background = '#15803d';
+        setTimeout(() => { btn.disabled = false; btn.textContent = 'Save deal'; btn.style.background = ''; }, 2500);
       }
       if (dealLeadId && window.opener) {
         window.opener.postMessage({ type: 'fd_deal_saved', lead_id: dealLeadId }, '*');
@@ -1002,13 +1135,15 @@
     }
   }
 
+  // Every term is saved (on or off) so its APR and rebate come back on load.
+  // term/rate/rebate/down/amount/payment/total keep their original meaning
+  // (figures at down payment box 1) so older copies of this page still read them.
   function captureFinanceTerms() {
-    return [48,60,72].map(t => ({
-      term: t,
-      rate:    parseNum('finRate'+t),   rebate: parseNum('finRebate'+t), down: parseNum('finDown'+t),
-      amount:  parseFloat((document.getElementById('finAmount' +t)?.textContent||'').replace(/[$,]/g,''))||0,
-      payment: parseFloat((document.getElementById('finPayment'+t)?.textContent||'').replace(/[$,]/g,''))||0,
-      total:   parseFloat((document.getElementById('finTotal'  +t)?.textContent||'').replace(/[$,]/g,''))||0,
+    const manual = [2,3].map(i => document.getElementById('finDown'+i).dataset.manual === 'true');
+    return finModel.map(m => ({
+      term: m.term, on: m.on, rate: m.rate, rebate: m.rebate,
+      down: m.opts[0].down, amount: round2(m.opts[0].amount), payment: round2(m.opts[0].payment), total: round2(m.opts[0].total),
+      downs: m.opts.map(o => o.down), downs_manual: manual, payments: m.opts.map(o => round2(o.payment)),
     }));
   }
   function captureLeaseTerms() {
@@ -1074,9 +1209,30 @@
     set('license', fmt(d.license||0));    set('otherFees', fmt(d.other_fees||0));
     set('tradeValue', fmt(d.trade_value||0)); set('tradePayoff', fmt(d.trade_payoff||0));
     set('invoiceCost', d.invoice_cost ? fmt(Number(d.invoice_cost)) : '');  // blank = not entered, LTV shows —
-    if (Array.isArray(d.finance_terms)) d.finance_terms.forEach(ft => {
-      set('finRate'+ft.term, ft.rate); set('finRebate'+ft.term, ft.rebate); set('finDown'+ft.term, fmt(ft.down||0));
-    });
+    if (Array.isArray(d.finance_terms) && d.finance_terms.length) {
+      const fts = d.finance_terms;
+      fts.forEach(ft => { set('finRate'+ft.term, ft.rate); set('finRebate'+ft.term, ft.rebate); });
+      const saved = fts.find(ft => Array.isArray(ft.downs));
+      let boxes, manual;
+      if (saved) {
+        finOn  = new Set(fts.filter(ft => ft.on).map(ft => ft.term).filter(t => FIN_TERMS.includes(t)));
+        boxes  = saved.downs;
+        manual = [false, !!(saved.downs_manual && saved.downs_manual[0]), !!(saved.downs_manual && saved.downs_manual[1])];
+      } else {
+        // Deal saved before Nov 2026: one down payment per term, and only the
+        // terms it listed. Keep each distinct amount it had, lowest in box 1.
+        finOn  = new Set(fts.map(ft => ft.term).filter(t => FIN_TERMS.includes(t)));
+        boxes  = [...new Set(fts.map(ft => Number(ft.down) || 0))].sort((a,b) => a-b);
+        manual = [false, boxes.length > 1, boxes.length > 2];
+      }
+      set('finDown1', fmt(Number(boxes[0]) || 0));
+      [2,3].forEach(i => {
+        const el = document.getElementById('finDown'+i);
+        el.dataset.manual = manual[i-1] ? 'true' : 'false';
+        if (manual[i-1]) el.value = fmt(Number(boxes[i-1]) || 0);
+      });
+      syncFinTerms();
+    }
     if (Array.isArray(d.lease_terms)) d.lease_terms.forEach(lt => {
       const mfEl = document.getElementById('leaseMF'+lt.term); if (mfEl) mfEl.value = lt.mf;
       set('leaseRebate'+lt.term, lt.rebate); set('leaseCap'+lt.term, fmt(lt.cap||0));
@@ -1114,7 +1270,7 @@
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">Loading…</td></tr>';
     const { data, error } = await sb.from('fd_user_profiles').select('*').order('created_at', { ascending: false });
     if (error) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--danger);">Error: ${error.message}</td></tr>`; return; }
-    const badge = r => { const c={admin:'#e8f0fe;color:#1a73e8',user:'#e6f4ea;color:#1e8e3e',pending:'#fef7e0;color:#e37400',revoked:'#fce8e6;color:#c5221f'}[r]||'#f1f3f4;color:#5f6368'; return `<span style="background:${c};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;">${r}</span>`; };
+    const badge = r => { const c={admin:'#eff6ff;color:#2563eb',user:'#dcfce7;color:#15803d',pending:'#fef3c7;color:#b45309',revoked:'#fee2e2;color:#b91c1c'}[r]||'#f1f5f9;color:#475569'; return `<span style="background:${c};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;">${r}</span>`; };
     tbody.innerHTML = data.map(u => `
       <tr>
         <td style="font-weight:600;">${u.full_name||'—'}</td>
@@ -1193,7 +1349,7 @@
     document.getElementById('pp-tp').textContent     = fmtDollar(tradePayoff);
     document.getElementById('pp-eq-lbl').textContent = equity >= 0 ? 'Trade Equity' : 'Negative Equity';
     document.getElementById('pp-eq').textContent     = (equity >= 0 ? '+' : '-') + fmtDollar(Math.abs(equity));
-    document.getElementById('pp-eq').style.color     = equity >= 0 ? '#1e8e3e' : '#c5221f';
+    document.getElementById('pp-eq').style.color     = equity >= 0 ? '#15803d' : '#b91c1c';
     document.getElementById('pp-otd-inline').textContent = fmtDollar(totalOTD);
     document.getElementById('pp-cash-due').textContent   = fmtDollar(cashDue);
   };
@@ -1213,7 +1369,7 @@
   document.querySelectorAll('.btn').forEach(attachRipple);
 
   // ── Tab indicator ─────────────────────────────────────────────
-  const TAB_COLORS = { finance:'#1a73e8', lease:'#1e8e3e', comparison:'#e37400', cash:'#8430ce' };
+  const TAB_COLORS = { finance:'#2563eb', lease:'#16a34a', comparison:'#d97706', cash:'#7c3aed' };
   function moveIndicator(activeBtn, color) {
     const tabs = document.querySelectorAll('.tab');
     const indicator = document.getElementById('tabIndicator');
@@ -1269,22 +1425,22 @@
   function updateLicenseField(price) {
     const el=document.getElementById('license'), btn=document.getElementById('licAutoBtn'), bd=document.getElementById('licBreakdown');
     if (licManual) {
-      if (btn) { btn.style.background='#fef7e0'; btn.style.color='#b06000'; }
-      if (bd) bd.innerHTML='<div style="color:#b06000;font-weight:600;">Manual override — not tracking Selling Price. Click ↻ Auto to re-enable CA DMV auto-calc.</div>';
+      if (btn) { btn.style.background='#fef3c7'; btn.style.color='#92400e'; }
+      if (bd) bd.innerHTML='<div style="color:#92400e;font-weight:600;">Manual override — not tracking Selling Price. Click ↻ Auto to re-enable CA DMV auto-calc.</div>';
       return;
     }
     const f=calcCALicense(price, currentFuel());
     if (el) el.value=fmt(f.total);
-    if (btn) { btn.style.background='#e8f0fe'; btn.style.color='var(--accent)'; }
+    if (btn) { btn.style.background='#eff6ff'; btn.style.color='var(--accent)'; }
     if (!bd) return;
-    const row=(label,val,note)=>`<div style="display:flex;justify-content:space-between;color:#3c4043;"><span style="color:#5f6368;">${label}${note?`<span style="font-size:10px;color:#9aa0a6;margin-left:4px;">${note}</span>`:''}</span><span style="font-weight:600;color:#202124;">${fmtDollar(val)}</span></div>`;
-    const sub=(label,val)=>`<div style="display:flex;justify-content:space-between;border-top:1px solid #c5d8fd;margin-top:4px;padding-top:4px;"><span style="font-weight:700;color:#1a73e8;font-size:11px;text-transform:uppercase;letter-spacing:0.4px;">${label}</span><span style="font-weight:700;color:#1a73e8;">${fmtDollar(val)}</span></div>`;
+    const row=(label,val,note)=>`<div style="display:flex;justify-content:space-between;color:#334155;"><span style="color:#475569;">${label}${note?`<span style="font-size:10px;color:#64748b;margin-left:4px;">${note}</span>`:''}</span><span style="font-weight:600;color:#0f172a;">${fmtDollar(val)}</span></div>`;
+    const sub=(label,val)=>`<div style="display:flex;justify-content:space-between;border-top:1px solid #bfdbfe;margin-top:4px;padding-top:4px;"><span style="font-weight:700;color:#2563eb;font-size:11px;text-transform:uppercase;letter-spacing:0.4px;">${label}</span><span style="font-weight:700;color:#2563eb;">${fmtDollar(val)}</span></div>`;
     bd.innerHTML=row('VLF',f.vlf,'0.65% of price + accessories')+row('Registration',f.reg,'flat')+row('CHP Fee',f.chp,'flat')+row('TIF',f.tif,'tiered by price')
       +(f.smog?row('Smog Abatement',f.smog,'gas/hybrid'):'')+row('County/District',f.county,'OC & LA')
       +sub('DMV Fees ('+f.yr+')',f.dmv)
       +row('CA Tire Fee',f.tire,TIRES+' × $'+TIRE_FEE.toFixed(2))+row('Electronic Filing',f.efile,'dealer, max')
       +sub('Total License &amp; Fees',f.total)
-      +`<div style="font-size:10px;color:#9aa0a6;margin-top:4px;">New car. EVs pay no smog fee; $${f.yr>=2027?127:121} EV road fee starts at first renewal.</div>`;
+      +`<div style="font-size:10px;color:#64748b;margin-top:4px;">New car. EVs pay no smog fee; $${f.yr>=2027?127:121} EV road fee starts at first renewal.</div>`;
   }
 
   // ── Helpers ───────────────────────────────────────────────────
@@ -1311,7 +1467,7 @@
   // ── Input formatting ──────────────────────────────────────────
   function setupInputFormatting() {
     const ids=['msrp','price','accessories','docFee','license','otherFees','tradeValue','tradePayoff',
-               'finDown48','finDown60','finDown72','finRebate48','finRebate60','finRebate72',
+               'finDown1','finDown2','finDown3',...FIN_TERMS.map(t=>'finRebate'+t),
                'leaseCap24','leaseCap36','leaseRebate24','leaseRebate36','leaseMiles24','leaseMiles36',
                'compDown1','compDown2','compDown3','compDown4'];
     ids.forEach(id => {
@@ -1418,14 +1574,24 @@
 
     // Finance
     const invoice=parseNum('invoiceCost');  // dealer cost — banks book LTV off invoice, not MSRP/selling price
-    [48,60,72].forEach(t => {
-      const rate=parseNum('finRate'+t), rebate=parseNum('finRebate'+t), down=parseNum('finDown'+t);
-      const af=total-down-equity-rebate, payment=calcLoanPayment(Math.max(0,af),rate,t),
-            totalCost=payment*t, ltv=invoice>0?(af/invoice*100):null;
-      animateTo(document.getElementById('finAmount' +t), Math.max(0,af), fmtDollar);
-      animateTo(document.getElementById('finPayment'+t), payment,        fmtDollar);
-      animateTo(document.getElementById('finTotal'  +t), totalCost,      fmtDollar);
-      setLTV('ltv'+t,'ltvFill'+t,ltv);
+    const finDs=finDowns();
+    finDs.forEach((d,i) => { document.getElementById('finHead'+(i+1)).textContent='$'+d.toLocaleString('en-US',{maximumFractionDigits:2})+' down'; });
+    finModel=FIN_TERMS.map(t => {
+      const rate=parseNum('finRate'+t), rebate=parseNum('finRebate'+t);
+      const opts=finDs.map((down,i) => {
+        const af=Math.max(0,total-down-equity-rebate), payment=calcLoanPayment(af,rate,t), n=t+'_'+(i+1);
+        const payEl=document.getElementById('finPay'+n), ltvEl=document.getElementById('finLtv'+n);
+        animateTo(payEl, payment, fmtDollar);
+        payEl.title='Total of '+t+' payments: '+fmtDollar(payment*t);
+        document.getElementById('finAmt'+n).textContent=fmtDollar(af)+' financed';
+        if (invoice>0) {  // LTV is per payment now: each down payment finances a different amount
+          const pct=af/invoice*100;
+          ltvEl.textContent='LTV '+fmt(pct)+'%';
+          ltvEl.className='fin-ltv dealer-only '+(pct>120?'over':pct>100?'warning':'ok');
+        } else { ltvEl.textContent=''; }
+        return { down, amount:af, payment, total:payment*t };
+      });
+      return { term:t, on:finOn.has(t), rate, rebate, opts };
     });
 
     // Lease
@@ -1453,7 +1619,7 @@
     const downs=[1,2,3,4].map(i=>parseNum('compDown'+i));
     downs.forEach((d,i) => { document.getElementById('compHead'+(i+1)).textContent=fmtDollar(d)+' Down'; });
     let html='';
-    [48,60,72].forEach(t => {
+    FIN_TERMS.filter(t=>finOn.has(t)).forEach(t => {
       const rate=parseNum('finRate'+t), rebate=parseNum('finRebate'+t);
       const pays=downs.map(d=>calcLoanPayment(Math.max(0,total-d-equity-rebate),rate,t));
       const minPay=Math.min(...pays);
@@ -1498,16 +1664,19 @@
     document.querySelectorAll('input[type="text"]').forEach(el => {
       if (el.id.startsWith('fin')||el.id.startsWith('lease')||el.id.startsWith('comp')||el.id==='taxRate') return;
       if (el.id==='invoiceCost') { el.value=''; return; }
-      if (!el.closest('.info-bar')) el.value='0.00';
+      if (el.closest('.app')) el.value='0.00';  // money boxes only: not the deal strip, not the search boxes
     });
     // Keep the customer: clear the numbers and car, not who the deal is for.
     document.querySelectorAll('.info-bar input').forEach(el => { if (el.id!=='customerName') el.value=''; });
     licManual=false; activeDealId=null;
+    document.getElementById('finDown1').value='0.00';
+    [2,3].forEach(i => { document.getElementById('finDown'+i).dataset.manual='false'; });
     const fuelEl=document.getElementById('fuelType'); if (fuelEl) fuelEl.value='gas';
     updateDealStatus(); recalc();
   }
 
   // ── Init ──────────────────────────────────────────────────────
+  buildFinanceUI();
   setupInputFormatting();
   moveIndicator(document.querySelector('.tab.active'), TAB_COLORS.finance);
   initAuth();
