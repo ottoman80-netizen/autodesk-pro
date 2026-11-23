@@ -359,8 +359,13 @@
     .fin-note { padding: 0 18px 16px; font-size: 12px; color: var(--text-muted); }
     /* ── Trade Payoff tab ── */
     .po-wrap { padding: 18px; display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 18px; align-items: start; }
-    .po-form .form-row label { min-width: 170px; }
+    .po-form .form-row label { min-width: 170px; max-width: 190px; }
     .po-form .form-row > input { min-width: 0; }
+    .po-req { font-size: 10px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: #b91c1c; margin-left: 4px; }
+    .po-made-help { margin: 2px 0 6px; padding: 8px 10px; border-radius: 6px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; font-size: 12px; font-weight: 600; line-height: 1.5; }
+    .po-mini { margin-left: 4px; height: 26px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--accent); background: #fff; color: var(--accent); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .po-mini:hover { background: var(--accent); color: #fff; }
+    .po-form input[type="date"] { text-align: left; font-weight: 600; }
     .po-help { margin-top: 10px; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
     .po-result { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
     .po-main { padding: 16px 18px; background: #ecfeff; border-bottom: 1px solid #a5f3fc; border-left: 6px solid #0891b2; color: #155e75; }
@@ -778,8 +783,14 @@
             <div class="form-row"><label for="poPayment">Monthly payment</label><div class="currency" style="flex:1;position:relative;"><input type="text" id="poPayment" inputmode="decimal" placeholder="if known" oninput="calcPayoff()"></div></div>
             <div class="form-row"><label for="poTerm">Original term (months)</label><input type="text" id="poTerm" inputmode="numeric" placeholder="if known" oninput="calcPayoff()"></div>
             <div class="form-row"><label for="poRate">Interest rate (APR %)</label><input type="text" id="poRate" inputmode="decimal" placeholder="blank if unknown" oninput="calcPayoff()"></div>
-            <div class="form-row"><label for="poMade">Payments made so far</label><input type="text" id="poMade" inputmode="numeric" placeholder="0" oninput="calcPayoff()"></div>
-            <div class="po-help">Enter payments made plus any three of the four boxes above. Whatever is left blank, including the rate, is worked out from the others.</div>
+            <div class="form-row"><label for="poMade">Payments made so far <span class="po-req">required</span></label><input type="text" id="poMade" inputmode="numeric" placeholder="how many" oninput="calcPayoff()"></div>
+            <div class="po-made-help" id="poMadeHelp" style="display:none;"><span id="poMadeHelpText"></span> <button type="button" class="po-mini" id="poMadeUse" onclick="usePaymentsDue()"></button></div>
+            <div class="po-help">Enter payments made plus any three of the four boxes above it. Whatever is left blank, including the rate, is worked out from the others.</div>
+            <div class="fin-label" style="margin-top:16px;">Optional — for a closer estimate</div>
+            <div class="form-row"><label for="poDueDay">Day of the month the payment is due</label><input type="text" id="poDueDay" inputmode="numeric" placeholder="1 to 31" oninput="calcPayoff()"></div>
+            <div class="form-row"><label for="poLastDate">Or date of the last payment</label><input type="date" id="poLastDate" oninput="calcPayoff()"></div>
+            <div class="form-row"><label for="poFirstDate">Date of the first payment</label><input type="date" id="poFirstDate" oninput="calcPayoff()"></div>
+            <div class="po-help">The due day (or last payment date) adds the daily interest built up since the last payment. The first payment date only helps count how many payments were due.</div>
           </div>
           <div class="po-result" id="poResult">
             <div class="po-main">
@@ -794,10 +805,13 @@
               <div class="po-stat"><span>Payments left</span><strong id="poLeft">—</strong></div>
               <div class="po-stat"><span>Principal paid so far</span><strong id="poPrincipal">—</strong></div>
               <div class="po-stat"><span>Interest paid so far</span><strong id="poInterest">—</strong></div>
+              <div class="po-stat"><span>Balance after last payment</span><strong id="poBalance">—</strong></div>
+              <div class="po-stat"><span id="poAccruedLabel">Interest since last payment</span><strong id="poAccrued">—</strong></div>
+              <div class="po-stat"><span>Daily interest</span><strong id="poPerDiem">—</strong></div>
             </div>
             <div class="po-actions">
               <button type="button" class="po-use" id="poUseBtn" onclick="usePayoffAsTrade()" disabled>Use as Trade Payoff</button>
-              <span class="po-note">Estimate only. The lender's real payoff also includes daily interest since the last payment and any late or other fees, so always confirm with the lender.</span>
+              <span class="po-note">Estimate only. The lender's real payoff can differ: missed, late or extra payments, fees, and the lender's own way of counting interest. Always confirm with the lender.</span>
             </div>
           </div>
         </div>
@@ -1788,6 +1802,7 @@
   function estimatePayoff(inp) {
     let { amt, pmt, n, apr, made } = inp;
     const has = v => v != null && v > 0, est = {};
+    if (made == null || made < 0) return { need: 'Enter how many payments have been made so far.' };
     let r = apr != null && apr >= 0 ? apr/1200 : null;
     if (r == null) {
       if (!(has(amt) && has(pmt) && has(n))) return { need: 'Without the rate, enter the amount financed, the payment and the term.' };
@@ -1803,7 +1818,6 @@
       if (r > 0 && pmt <= amt*r) return { need: 'That payment would not even cover the interest at this rate. Check the payment or the rate.' };
       n = r === 0 ? amt/pmt : -Math.log(1-amt*r/pmt)/Math.log(1+r); est.n = true;
     }
-    made = Math.max(0, made || 0);
     const grow = Math.pow(1+r, made);
     let bal = Math.max(0, r === 0 ? amt - pmt*made : amt*grow - pmt*(grow-1)/r);
     if (made >= n && bal < pmt) bal = 0;  // every scheduled payment made: only rounding is left
@@ -1811,26 +1825,87 @@
     return { payoff: bal, apr: r*1200, pmt, amt, n, made, left: Math.max(0, Math.ceil(n - made - 0.05)),
              principal, interest: Math.max(0, pmt*Math.min(made, n) - principal), est };
   }
+  // Optional dates. All are local calendar days, no time of day.
+  const poDate = id => { const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(document.getElementById(id).value||''); return m ? new Date(+m[1], +m[2]-1, +m[3]) : null; };
+  const poToday = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
+  const poDays = (a, b) => Math.round((b - a)/86400000);
+  // Payments that have come due from the first payment date through today.
+  function paymentsDueSince(first, today) {
+    if (!first || first > today) return first ? 0 : null;
+    const dim = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+    return (today.getFullYear()-first.getFullYear())*12 + (today.getMonth()-first.getMonth())
+         + (today.getDate() >= Math.min(first.getDate(), dim) ? 1 : 0);
+  }
+  // When interest last stopped being covered by a payment: the last payment
+  // date if given, else the most recent due day (autopay pays on the due day).
+  function lastPaymentDay(today) {
+    const last = poDate('poLastDate');
+    if (last) return last > today ? { bad: 'The last payment date is in the future.' } : { date: last, basis: 'last payment date' };
+    let day = poNum('poDueDay'), basis = 'due day';
+    if (day == null) { const first = poDate('poFirstDate'); if (first && first <= today) { day = first.getDate(); basis = 'first payment date'; } }
+    if (day == null) return null;
+    if (day < 1 || day > 31 || day !== Math.floor(day)) return { bad: 'The due day must be a number from 1 to 31.' };
+    const at = (y, m) => new Date(y, m, Math.min(day, new Date(y, m+1, 0).getDate()));
+    let d = at(today.getFullYear(), today.getMonth());
+    if (d > today) d = at(today.getFullYear(), today.getMonth()-1);
+    return { date: d, basis };
+  }
+  let poDueCount = null;
+  function usePaymentsDue() {
+    if (poDueCount == null) return;
+    document.getElementById('poMade').value = String(poDueCount);
+    calcPayoff();
+  }
+
   let poLast = null;
   function calcPayoff() {
     const inp = { amt: poNum('poAmount'), pmt: poNum('poPayment'), n: poNum('poTerm'), apr: poNum('poRate'), made: poNum('poMade') };
     const set = (id, t) => { document.getElementById(id).textContent = t; };
     const box = document.getElementById('poResult'), btn = document.getElementById('poUseBtn');
     const anything = ['poAmount','poPayment','poTerm','poRate'].some(id => document.getElementById(id).value.trim() !== '');
+    const today = poToday();
+    // Payments due by the first payment date: a suggestion only, never typed in for the user
+    const help = document.getElementById('poMadeHelp');
+    poDueCount = paymentsDueSince(poDate('poFirstDate'), today);
+    if (poDueCount != null && inp.n > 0) poDueCount = Math.min(poDueCount, Math.round(inp.n));
+    if (poDueCount == null) help.style.display = 'none';
+    else {
+      help.style.display = '';
+      const same = inp.made === poDueCount;
+      set('poMadeHelpText', 'Going by the first payment date, ' + poDueCount + (poDueCount === 1 ? ' payment was' : ' payments were') + ' due by today.' + (same ? '' : ' Missed or extra payments change this.'));
+      const useBtn = document.getElementById('poMadeUse');
+      useBtn.style.display = same ? 'none' : ''; useBtn.textContent = 'Use ' + poDueCount;
+    }
     const res = anything ? estimatePayoff(inp) : { need: 'Fill in the loan details to see an estimate.', quiet: true };
+    // Daily interest since the last payment (simple interest on the balance)
+    if (!res.need) {
+      res.balance = res.payoff; res.perDiem = res.balance * res.apr/100/365;
+      const lp = res.balance > 0 && res.made > 0 ? lastPaymentDay(today) : null;
+      if (lp && lp.bad) res.dateNote = lp.bad;
+      else if (lp) { res.days = poDays(lp.date, today); res.accrued = res.perDiem * res.days; res.basis = lp.basis; res.since = lp.date; res.payoff = res.balance + res.accrued; }
+    }
     poLast = res.need ? null : res;
     btn.disabled = !poLast;
     set('poRateLabel', 'Interest rate'); set('poPaymentLabel', 'Monthly payment'); set('poAmountLabel', 'Amount financed');
     if (res.need) {
       box.className = 'po-result' + (res.quiet ? '' : ' warn');
       set('poPayoff', '—'); set('poHint', res.need);
-      ['poRateOut','poPaymentOut','poAmountOut','poLeft','poPrincipal','poInterest'].forEach(id => set(id, '—'));
+      ['poRateOut','poPaymentOut','poAmountOut','poLeft','poPrincipal','poInterest','poBalance','poAccrued','poPerDiem'].forEach(id => set(id, '—'));
+      set('poAccruedLabel', 'Interest since last payment');
       return;
     }
     box.className = 'po-result';
     set('poPayoff', fmtDollar(res.payoff));
-    set('poHint', res.left === 0 ? 'All ' + Math.round(res.n) + ' payments made: the loan should be paid off.'
-      : 'After ' + res.made + ' of ' + (Math.round(res.n*10)/10) + ' payments' + (inp.made == null ? ' — enter payments made to update this' : ''));
+    const sinceTxt = res.since ? res.since.toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
+    set('poHint', res.left === 0 && res.balance === 0 ? 'All ' + Math.round(res.n) + ' payments made: the loan should be paid off.'
+      : 'After ' + res.made + ' of ' + (Math.round(res.n*10)/10) + ' payments'
+        + (res.days != null ? ', plus ' + res.days + (res.days === 1 ? ' day' : ' days') + ' of interest since ' + sinceTxt
+           : res.dateNote ? '. ' + res.dateNote
+           : res.balance > 0 && res.made > 0 ? '. Add the due day to include daily interest' : ''));
+    set('poBalance', fmtDollar(res.balance));
+    set('poPerDiem', fmtDollar(res.perDiem) + ' / day');
+    set('poAccruedLabel', res.days != null ? 'Interest since ' + sinceTxt + ' (' + res.days + (res.days === 1 ? ' day)' : ' days)') : 'Interest since last payment');
+    set('poAccrued', res.days != null ? fmtDollar(res.accrued) : 'not included');
     if (res.est.rate) set('poRateLabel', 'Interest rate (estimated)');
     if (res.est.pmt)  set('poPaymentLabel', 'Monthly payment (calculated)');
     if (res.est.amt)  set('poAmountLabel', 'Amount financed (calculated)');
@@ -1857,6 +1932,7 @@
     document.getElementById('finDown1').value='0.00';
     [2,3].forEach(i => { document.getElementById('finDown'+i).dataset.manual='false'; });
     const fuelEl=document.getElementById('fuelType'); if (fuelEl) fuelEl.value='gas';
+    ['poLastDate','poFirstDate'].forEach(id => { document.getElementById(id).value=''; });
     updateDealStatus(); recalc(); calcPayoff();
   }
 
