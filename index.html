@@ -357,8 +357,31 @@
     .ltv-strip.over { background: #fee2e2; border-color: #fca5a5; border-left-color: #b91c1c; color: #991b1b; }
     .fin-empty td { text-align: center; padding: 28px 12px; color: var(--text-muted); }
     .fin-note { padding: 0 18px 16px; font-size: 12px; color: var(--text-muted); }
+    /* ── Trade Payoff tab ── */
+    .po-wrap { padding: 18px; display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 18px; align-items: start; }
+    .po-form .form-row label { min-width: 170px; }
+    .po-form .form-row > input { min-width: 0; }
+    .po-help { margin-top: 10px; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    .po-result { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .po-main { padding: 16px 18px; background: #ecfeff; border-bottom: 1px solid #a5f3fc; border-left: 6px solid #0891b2; color: #155e75; }
+    .po-main-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+    .po-main-value { font-size: 36px; font-weight: 700; letter-spacing: -0.6px; line-height: 1.2; color: #0e7490; }
+    .po-main-hint { font-size: 13px; font-weight: 600; }
+    .po-result.warn .po-main { background: #fef3c7; border-bottom-color: #fcd34d; border-left-color: #b45309; color: #92400e; }
+    .po-result.warn .po-main-value { color: #92400e; }
+    .po-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .po-stat { padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; }
+    .po-stat span { font-size: 11px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-muted); }
+    .po-stat strong { font-size: 18px; font-weight: 700; color: var(--text); }
+    .po-actions { padding: 14px 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .po-use { height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .po-use:hover { background: var(--accent-hover); }
+    .po-use:disabled { background: #e2e8f0; border-color: #e2e8f0; color: #64748b; cursor: not-allowed; }
+    .po-note { flex: 1 1 260px; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    @media (max-width: 900px) { .po-wrap { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 640px) { .po-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .po-wrap { padding: 14px; } .po-form .form-row label { min-width: 0; flex: 0 0 52%; } }
     @media (max-width: 900px) { .header { position: static; } .header-date-small { display: none; } }
-    @media (max-width: 640px) { .fin-downs { grid-template-columns: 1fr; } .tab { font-size: 13px; padding: 0 6px; } }
+    @media (max-width: 640px) { .fin-downs { grid-template-columns: 1fr; } .tab { flex: 1 1 0; min-width: 0; font-size: 12px; line-height: 1.2; padding: 0 4px; } .tab::before { display: none; } }
     @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
     /* ── Responsive ── */
@@ -377,7 +400,9 @@
       .tabs { display: none !important; }
       .left-col { display: none !important; }
       .info-bar { display: none !important; }
-      .fin-controls, .fin-note { display: none !important; }
+      .fin-controls, .fin-note, .po-actions { display: none !important; }
+      .po-wrap { padding: 0; }
+      .po-form .form-row input { border: none; background: transparent; }
       .fin-grid-wrap { padding: 0; overflow: visible; }
       .fin-grid { min-width: 0; }
       .fin-grid th { font-size: 9px; padding: 6px 8px; }
@@ -660,6 +685,7 @@
         <button class="tab" style="--dot:#16a34a;" onclick="switchTab('lease', this)">Lease</button>
         <button class="tab" style="--dot:#d97706;" onclick="switchTab('comparison', this)">Payment Comparison</button>
         <button class="tab" style="--dot:#7c3aed;" onclick="switchTab('cash', this)">Cash</button>
+        <button class="tab" style="--dot:#0891b2;" onclick="switchTab('payoff', this)">Trade Payoff</button>
         <div class="tab-indicator" id="tabIndicator"></div>
       </div>
 
@@ -738,6 +764,42 @@
           <div class="ltv-item"><div class="ltv-label">Equiv. APR (36mo)</div><div class="ltv-value" id="leaseAPR36">—</div><div class="ltv-progress"><div class="ltv-progress-fill" id="leaseAPRFill36" style="width:0%"></div></div></div>
           <div class="ltv-item"><div class="ltv-label">Total Lease Cost (24)</div><div class="ltv-value" id="leaseTotalCost24" style="font-size:15px;">—</div><div class="ltv-progress" style="background:transparent;"></div></div>
           <div class="ltv-item"><div class="ltv-label">Total Lease Cost (36)</div><div class="ltv-value" id="leaseTotalCost36" style="font-size:15px;">—</div><div class="ltv-progress" style="background:transparent;"></div></div>
+        </div>
+      </div>
+
+      <!-- TRADE PAYOFF TAB: estimates what is still owed on the customer's current loan.
+           A scratch calculator: nothing here is saved with the deal except the
+           Trade Payoff box it can fill in. Field ids start with "po" (Reset relies on it). -->
+      <div class="tab-content" id="tab-payoff">
+        <div class="po-wrap">
+          <div class="po-form">
+            <div class="fin-label">Customer's current loan</div>
+            <div class="form-row"><label for="poAmount">Original amount financed</label><div class="currency" style="flex:1;position:relative;"><input type="text" id="poAmount" inputmode="decimal" placeholder="if known" oninput="calcPayoff()"></div></div>
+            <div class="form-row"><label for="poPayment">Monthly payment</label><div class="currency" style="flex:1;position:relative;"><input type="text" id="poPayment" inputmode="decimal" placeholder="if known" oninput="calcPayoff()"></div></div>
+            <div class="form-row"><label for="poTerm">Original term (months)</label><input type="text" id="poTerm" inputmode="numeric" placeholder="if known" oninput="calcPayoff()"></div>
+            <div class="form-row"><label for="poRate">Interest rate (APR %)</label><input type="text" id="poRate" inputmode="decimal" placeholder="blank if unknown" oninput="calcPayoff()"></div>
+            <div class="form-row"><label for="poMade">Payments made so far</label><input type="text" id="poMade" inputmode="numeric" placeholder="0" oninput="calcPayoff()"></div>
+            <div class="po-help">Enter payments made plus any three of the four boxes above. Whatever is left blank, including the rate, is worked out from the others.</div>
+          </div>
+          <div class="po-result" id="poResult">
+            <div class="po-main">
+              <div class="po-main-label">Estimated payoff today</div>
+              <div class="po-main-value" id="poPayoff">—</div>
+              <div class="po-main-hint" id="poHint">Fill in the loan details to see an estimate.</div>
+            </div>
+            <div class="po-stats">
+              <div class="po-stat"><span id="poRateLabel">Interest rate</span><strong id="poRateOut">—</strong></div>
+              <div class="po-stat"><span id="poPaymentLabel">Monthly payment</span><strong id="poPaymentOut">—</strong></div>
+              <div class="po-stat"><span id="poAmountLabel">Amount financed</span><strong id="poAmountOut">—</strong></div>
+              <div class="po-stat"><span>Payments left</span><strong id="poLeft">—</strong></div>
+              <div class="po-stat"><span>Principal paid so far</span><strong id="poPrincipal">—</strong></div>
+              <div class="po-stat"><span>Interest paid so far</span><strong id="poInterest">—</strong></div>
+            </div>
+            <div class="po-actions">
+              <button type="button" class="po-use" id="poUseBtn" onclick="usePayoffAsTrade()" disabled>Use as Trade Payoff</button>
+              <span class="po-note">Estimate only. The lender's real payoff also includes daily interest since the last payment and any late or other fees, so always confirm with the lender.</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1390,7 +1452,7 @@
   document.querySelectorAll('.btn').forEach(attachRipple);
 
   // ── Tab indicator ─────────────────────────────────────────────
-  const TAB_COLORS = { finance:'#2563eb', lease:'#16a34a', comparison:'#d97706', cash:'#7c3aed' };
+  const TAB_COLORS = { finance:'#2563eb', lease:'#16a34a', comparison:'#d97706', cash:'#7c3aed', payoff:'#0891b2' };
   function moveIndicator(activeBtn, color) {
     const tabs = document.querySelectorAll('.tab');
     const indicator = document.getElementById('tabIndicator');
@@ -1503,12 +1565,18 @@
       inv.addEventListener('blur', function(){ const raw=parseFloat(this.value.replace(/,/g,'')); this.value=isNaN(raw)||raw===0?'':fmt(raw); recalc(); });
     }
 
+    ['poAmount','poPayment'].forEach(id => {
+      const el=document.getElementById(id); if (!el) return;
+      el.addEventListener('focus',function(){ const raw=parseFloat(this.value.replace(/,/g,'')); this.value=isNaN(raw)||raw===0?'':String(raw); this.select(); });
+      el.addEventListener('blur', function(){ const raw=parseFloat(this.value.replace(/,/g,'')); this.value=isNaN(raw)||raw===0?'':fmt(raw); calcPayoff(); });
+    });
+
     // Every text box: typing replaces the old value in one go. The focus
     // handlers above already select the text, but a mouse click fires
     // mouseup right after focus and collapses that selection to a caret —
     // that is why click-then-type was deleting one digit at a time. Swallow
     // the first mouseup after a click-focus so the selection survives.
-    const formatted=new Set([...ids,'invoiceCost']);
+    const formatted=new Set([...ids,'invoiceCost','poAmount','poPayment']);
     document.querySelectorAll('input[type="text"]').forEach(el => {
       if (!formatted.has(el.id)) el.addEventListener('focus', function(){ this.select(); });
       el.addEventListener('mousedown', function(){ this._selectOnClick = document.activeElement !== this; });
@@ -1702,11 +1770,85 @@
     }
   }
 
+  // ── Trade payoff estimate ─────────────────────────────────────
+  // A loan is pinned down by any three of: amount financed, payment, term,
+  // rate. The fourth is solved from the others, then the balance after the
+  // payments made is the estimated payoff.
+  const poNum = id => { const v=parseFloat((document.getElementById(id).value||'').replace(/[$,%\s]/g,'')); return isFinite(v) ? v : null; };
+  // Monthly rate that makes `pmt` pay off `amt` in `n` months (bisection; no closed form).
+  function solveLoanRate(amt, pmt, n) {
+    if (pmt*n <= amt) return 0;
+    let lo=0, hi=0.10;  // up to 120% APR
+    for (let i=0; i<80; i++) {
+      const mid=(lo+hi)/2, p=amt*(mid*Math.pow(1+mid,n))/(Math.pow(1+mid,n)-1);
+      if (p < pmt) lo=mid; else hi=mid;
+    }
+    return (lo+hi)/2;
+  }
+  function estimatePayoff(inp) {
+    let { amt, pmt, n, apr, made } = inp;
+    const has = v => v != null && v > 0, est = {};
+    let r = apr != null && apr >= 0 ? apr/1200 : null;
+    if (r == null) {
+      if (!(has(amt) && has(pmt) && has(n))) return { need: 'Without the rate, enter the amount financed, the payment and the term.' };
+      if (pmt*n < amt - 0.5) return { need: 'These numbers do not add up: ' + n + ' payments of ' + fmtDollar(pmt) + ' come to less than the amount financed. Check the payment or the term.' };
+      r = solveLoanRate(amt, pmt, n); est.rate = true;
+    } else if (!has(pmt)) {
+      if (!(has(amt) && has(n))) return { need: 'Enter the amount financed and the term, or the monthly payment.' };
+      pmt = r === 0 ? amt/n : amt*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1); est.pmt = true;
+    } else if (!has(amt)) {
+      if (!has(n)) return { need: 'Enter the original term or the amount financed.' };
+      amt = r === 0 ? pmt*n : pmt*(1-Math.pow(1+r,-n))/r; est.amt = true;
+    } else if (!has(n)) {
+      if (r > 0 && pmt <= amt*r) return { need: 'That payment would not even cover the interest at this rate. Check the payment or the rate.' };
+      n = r === 0 ? amt/pmt : -Math.log(1-amt*r/pmt)/Math.log(1+r); est.n = true;
+    }
+    made = Math.max(0, made || 0);
+    const grow = Math.pow(1+r, made);
+    let bal = Math.max(0, r === 0 ? amt - pmt*made : amt*grow - pmt*(grow-1)/r);
+    if (made >= n && bal < pmt) bal = 0;  // every scheduled payment made: only rounding is left
+    const principal = amt - bal;
+    return { payoff: bal, apr: r*1200, pmt, amt, n, made, left: Math.max(0, Math.ceil(n - made - 0.05)),
+             principal, interest: Math.max(0, pmt*Math.min(made, n) - principal), est };
+  }
+  let poLast = null;
+  function calcPayoff() {
+    const inp = { amt: poNum('poAmount'), pmt: poNum('poPayment'), n: poNum('poTerm'), apr: poNum('poRate'), made: poNum('poMade') };
+    const set = (id, t) => { document.getElementById(id).textContent = t; };
+    const box = document.getElementById('poResult'), btn = document.getElementById('poUseBtn');
+    const anything = ['poAmount','poPayment','poTerm','poRate'].some(id => document.getElementById(id).value.trim() !== '');
+    const res = anything ? estimatePayoff(inp) : { need: 'Fill in the loan details to see an estimate.', quiet: true };
+    poLast = res.need ? null : res;
+    btn.disabled = !poLast;
+    set('poRateLabel', 'Interest rate'); set('poPaymentLabel', 'Monthly payment'); set('poAmountLabel', 'Amount financed');
+    if (res.need) {
+      box.className = 'po-result' + (res.quiet ? '' : ' warn');
+      set('poPayoff', '—'); set('poHint', res.need);
+      ['poRateOut','poPaymentOut','poAmountOut','poLeft','poPrincipal','poInterest'].forEach(id => set(id, '—'));
+      return;
+    }
+    box.className = 'po-result';
+    set('poPayoff', fmtDollar(res.payoff));
+    set('poHint', res.left === 0 ? 'All ' + Math.round(res.n) + ' payments made: the loan should be paid off.'
+      : 'After ' + res.made + ' of ' + (Math.round(res.n*10)/10) + ' payments' + (inp.made == null ? ' — enter payments made to update this' : ''));
+    if (res.est.rate) set('poRateLabel', 'Interest rate (estimated)');
+    if (res.est.pmt)  set('poPaymentLabel', 'Monthly payment (calculated)');
+    if (res.est.amt)  set('poAmountLabel', 'Amount financed (calculated)');
+    set('poRateOut', fmt(res.apr) + '%'); set('poPaymentOut', fmtDollar(res.pmt)); set('poAmountOut', fmtDollar(res.amt));
+    set('poLeft', String(res.left)); set('poPrincipal', fmtDollar(res.principal)); set('poInterest', fmtDollar(res.interest));
+  }
+  function usePayoffAsTrade() {
+    if (!poLast) return;
+    document.getElementById('tradePayoff').value = fmt(poLast.payoff);
+    recalc();
+    showToast('Trade Payoff set to ' + fmtDollar(poLast.payoff), 'success');
+  }
+
   // ── Reset ─────────────────────────────────────────────────────
   function resetAll() {
     document.querySelectorAll('input[type="text"]').forEach(el => {
       if (el.id.startsWith('fin')||el.id.startsWith('lease')||el.id.startsWith('comp')||el.id==='taxRate') return;
-      if (el.id==='invoiceCost') { el.value=''; return; }
+      if (el.id==='invoiceCost' || el.id.startsWith('po')) { el.value=''; return; }
       if (el.closest('.app')) el.value='0.00';  // money boxes only: not the deal strip, not the search boxes
     });
     // Keep the customer: clear the numbers and car, not who the deal is for.
@@ -1715,7 +1857,7 @@
     document.getElementById('finDown1').value='0.00';
     [2,3].forEach(i => { document.getElementById('finDown'+i).dataset.manual='false'; });
     const fuelEl=document.getElementById('fuelType'); if (fuelEl) fuelEl.value='gas';
-    updateDealStatus(); recalc();
+    updateDealStatus(); recalc(); calcPayoff();
   }
 
   // ── Init ──────────────────────────────────────────────────────
