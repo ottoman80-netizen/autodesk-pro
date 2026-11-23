@@ -345,11 +345,14 @@
     .fin-pay { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); }
     .fin-sub { font-size: 11px; color: var(--text-muted); }
     .fin-tot { font-weight: 600; color: var(--text); }
-    .ltv-strip { margin: 4px 18px 12px; padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; border-radius: 8px; border: 1px solid var(--border); border-left: 6px solid #94a3b8; background: #f8fafc; color: var(--text-muted); }
+    .ltv-row { margin: 4px 18px 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    @media (max-width: 760px) { .ltv-row { grid-template-columns: 1fr; } }
+    .ltv-strip { padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; border-radius: 8px; border: 1px solid var(--border); border-left: 6px solid #94a3b8; background: #f8fafc; color: var(--text-muted); }
     .ltv-strip-label { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
     .ltv-strip-label span { font-weight: 600; text-transform: none; letter-spacing: 0; }
     .ltv-strip-value { font-size: 28px; font-weight: 700; letter-spacing: -0.4px; line-height: 1; }
-    .ltv-strip-hint { font-size: 13px; font-weight: 600; margin-left: auto; }
+    .ltv-strip-hint { font-size: 13px; font-weight: 600; flex-basis: 100%; }
+    #ltvNeedStrip.need { background: #eff6ff; border-color: #bfdbfe; border-left-color: #2563eb; color: #1e3a8a; }
     .ltv-strip.ok   { background: #dcfce7; border-color: #86efac; border-left-color: #15803d; color: #166534; }
     .ltv-strip.over { background: #fee2e2; border-color: #fca5a5; border-left-color: #b91c1c; color: #991b1b; }
     .fin-empty td { text-align: center; padding: 28px 12px; color: var(--text-muted); }
@@ -686,10 +689,17 @@
             <tbody id="finBody"></tbody>
           </table>
         </div>
-        <div class="ltv-strip dealer-only" id="ltvStrip">
-          <span class="ltv-strip-label">LTV <span id="ltvOnceNote"></span></span>
-          <span class="ltv-strip-value" id="ltvOnce">—</span>
-          <span class="ltv-strip-hint" id="ltvOnceHint"></span>
+        <div class="ltv-row dealer-only">
+          <div class="ltv-strip" id="ltvStrip">
+            <span class="ltv-strip-label">LTV <span id="ltvOnceNote"></span></span>
+            <span class="ltv-strip-value" id="ltvOnce">—</span>
+            <span class="ltv-strip-hint" id="ltvOnceHint"></span>
+          </div>
+          <div class="ltv-strip" id="ltvNeedStrip">
+            <span class="ltv-strip-label">Down payment for 100% LTV</span>
+            <span class="ltv-strip-value" id="ltvNeed">—</span>
+            <span class="ltv-strip-hint" id="ltvNeedHint"></span>
+          </div>
         </div>
         <div class="fin-note">Monthly payment in bold, with amount financed and total cost (all payments added up) underneath.</div>
       </div>
@@ -1602,18 +1612,29 @@
     // (the most that gets financed). If the terms that are on carry different
     // rebates, the smallest rebate is used so the figure is never understated.
     const ltvStrip=document.getElementById('ltvStrip'), ltvEl=document.getElementById('ltvOnce'),
-          ltvNote=document.getElementById('ltvOnceNote'), ltvHint=document.getElementById('ltvOnceHint');
+          ltvNote=document.getElementById('ltvOnceNote'), ltvHint=document.getElementById('ltvOnceHint'),
+          needStrip=document.getElementById('ltvNeedStrip'), needEl=document.getElementById('ltvNeed'), needHint=document.getElementById('ltvNeedHint');
     const onRows=finModel.filter(m=>m.on);
     if (invoice>0 && onRows.length) {
       const pct=Math.max(...onRows.map(m=>m.opts[0].amount))/invoice*100;
       const over=round2(pct)>100;  // green at 100% or under, red above
       ltvEl.textContent=fmt(pct)+'%';
-      ltvStrip.className='ltv-strip dealer-only '+(over?'over':'ok');
+      ltvStrip.className='ltv-strip '+(over?'over':'ok');
       ltvNote.textContent='at '+document.getElementById('finHead1').textContent;
       ltvHint.textContent=over?'Over 100% of invoice':'At or under 100% of invoice';
+      // Down payment that makes the amount financed equal the invoice cost
+      // (same smallest-rebate basis as the LTV beside it).
+      const need=Math.max(0, round2(total-equity-Math.min(...onRows.map(m=>m.rebate))-invoice)), more=round2(need-finDs[0]);
+      needEl.textContent=fmtDollar(need);
+      needStrip.className='ltv-strip need';
+      needHint.textContent=need===0?'Already at or under 100% with no money down'
+        : more>0?fmtDollar(more)+' more than box 1'
+        : more<0?'Box 1 is '+fmtDollar(-more)+' above what is needed'
+        : 'Box 1 is exactly this amount';
     } else {
-      ltvEl.textContent='—'; ltvStrip.className='ltv-strip dealer-only';
-      ltvNote.textContent=''; ltvHint.textContent=invoice>0?'Turn on a term to see LTV':'Enter the invoice cost to see LTV';
+      const msg=invoice>0?'Turn on a term to see this':'Enter the invoice cost to see this';
+      ltvEl.textContent='—'; ltvStrip.className='ltv-strip'; ltvNote.textContent=''; ltvHint.textContent=msg;
+      needEl.textContent='—'; needStrip.className='ltv-strip'; needHint.textContent=msg;
     }
 
     // Lease
